@@ -425,9 +425,10 @@ class MultiCEFocalLoss(torch.nn.Module):
 
 #用esayTL的数据
 
-
+# 实例化
 slover = Solver()
-for i in range(1000):
+# 开始训练
+for i in range(2000):
     slover.train(epoch=i)
 
 # slover.test(100)
