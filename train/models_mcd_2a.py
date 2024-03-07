@@ -6,7 +6,7 @@ from torch import nn
 import torch.nn.functional as F
 from torch import optim
 
- 
+# 残差卷积块
 # class BasicBlock(nn.Module):
 #     expansion = 1
 #
@@ -50,7 +50,7 @@ from torch import optim
 #
 #         return out
 
-
+# 特征提取器
 class Feature(nn.Module):
     def __init__(self, classes_num):
         super(Feature, self).__init__()
@@ -70,6 +70,7 @@ class Feature(nn.Module):
         )
 
         # block 2 and 3 are implementations of Depthwise Convolution and Separable Convolution
+        # 深度可分离卷积
         self.block_2 = nn.Sequential(
             nn.Conv2d(
                 in_channels=8,  # input shape (8, C, T)

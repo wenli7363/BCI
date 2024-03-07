@@ -3,7 +3,12 @@ import numpy as np
 import os
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
+# 用于导入mat数据，并转为numpy数组格式
+# every: 是否导入所有电极
+# number: 受试者数据编号
+# 返回处理好的训练集X(9,288,25,1000)，标签y(288)
 def import_data(every=False,number=1):
+    # 是否引入所有电极
     if every:
         electrodes = 25
     else:
@@ -12,23 +17,24 @@ def import_data(every=False,number=1):
     for i in range(9):
         # if(i==number):continue
     
-        print('Motor-Imagery-Tasks/data/A0' + str(i + 1) + 'T_slice.mat')
-        A01T = h5py.File('Motor-Imagery-Tasks/data/A0' + str(i + 1) + 'T_slice.mat', 'r')
+        print('/root/autodl-tmp/data/A0' + str(i + 1) + 'T_slice.mat')
+        A01T = h5py.File('./data/A0' + str(i + 1) + 'T_slice.mat', 'r')
         X1 = np.copy(A01T['image'])
-        X.append(X1[:, :electrodes, :])
+        X.append(X1[:, :electrodes, :])     # 注意是append进去的，所以升了一个维度，第一维是受试者编号
         y1 = np.copy(A01T['type'])
         y1 = y1[0, 0:X1.shape[0]:1]
-        y.append(np.asarray(y1, dtype=np.int32))
+        y.append(np.asarray(y1, dtype=np.int32))    # 转成numpy数组
 
     for subject in range(9):
         # if(i==number):continue
         delete_list = []
         for trial in range(288):
+            # 如果存在一个NaN的数据，说明这次trail有问题，删掉
             if np.isnan(X[subject][trial, :, :]).sum() > 0:
                 delete_list.append(trial)
         X[subject] = np.delete(X[subject], delete_list, 0)
         y[subject] = np.delete(y[subject], delete_list)
-    y = [y[i] - np.min(y[i]) for i in range(len(y))]
+    y = [y[i] - np.min(y[i]) for i in range(len(y))]    # 标签做个映射，从0开始
     return X, y
 
 
