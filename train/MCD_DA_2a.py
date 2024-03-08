@@ -19,6 +19,8 @@ def Entropy(input_):
 class Solver(object): 
     
     #取掉了args
+    # num_k表示训练几次特征提取器
+    # number参数在这个代码中用于指定目标域的数量。
     def __init__(self,  batch_size=128, number=2, learning_rate=0.001, interval=10,
                  # 优化器的类型
                  optimizer='adam'
@@ -41,7 +43,7 @@ class Solver(object):
         #     self.scale = True
         # else:
         #     self.scale = False
-        print('dataset loading')
+        print('------------------------ dataset loading -------------------')
 
  ########################### # 加载训练和测试数据
 
@@ -50,7 +52,7 @@ class Solver(object):
         # number 作为目标域数据，剩下8个个体数据作为源域
 
 
-        print('load finished!')
+        print('------------------------ load finished!  ------------------------')
 
 #########################################
 
@@ -78,20 +80,22 @@ class Solver(object):
 
 # 2020cvpr 的一篇loss
 #  改loss 
+# train_bs参数代表当前训练批次的大小(batch size)。
     def mcc_loss(self,input, class_num=4, temperature=2.5, train_bs=64):
         outputs_target_temp = input / temperature
         target_softmax_out_temp = nn.Softmax(dim=1)(outputs_target_temp)
         target_entropy_weight = Entropy(target_softmax_out_temp).detach()
         target_entropy_weight = 1 + torch.exp(-target_entropy_weight)
         target_entropy_weight = train_bs * target_entropy_weight / torch.sum(target_entropy_weight)
+
+        # cov_matrix_t计算目标域样本的加权协方差矩阵。
         cov_matrix_t = target_softmax_out_temp.mul(target_entropy_weight.view(-1, 1)).transpose(1, 0).mm(
             target_softmax_out_temp)
         cov_matrix_t = cov_matrix_t / torch.sum(cov_matrix_t, dim=1)
+        # 计算协方差矩阵迹之外的其他元素之和,作为惩罚项。
         mcc_loss = (torch.sum(cov_matrix_t) - torch.trace(cov_matrix_t)) / class_num
         return mcc_loss
 
-
- 
 
     ########## 定义优化器。##########
     def set_opimizer(self, which_opt='momentum', lr=0.001, momentum=0.9):
@@ -152,7 +156,7 @@ class Solver(object):
         return torch.mean(torch.abs(m(out1) - m(out2)))
 
 
-# loss
+# loss - 类别散度差异"(Class Discrepancy Divergence)
     def cdd(self,output_t1, output_t2):
         mul = output_t1.transpose(0, 1).mm(output_t2)
         cdd_loss = torch.sum(mul) - torch.trace(mul)
@@ -200,7 +204,8 @@ class Solver(object):
             output_s1 = self.C1(feat_s)
             output_s2 = self.C2(feat_s)
 
-            ###### 1
+###### 1 初始化分类器C1,C2,G
+        #   直接用交叉熵损失来保证在源域上分类是准确的
             loss_s1 = criterion(output_s1, labels_s)
             loss_s2 = criterion(output_s2, labels_s)
             loss_s = loss_s1 + loss_s2
@@ -225,6 +230,8 @@ class Solver(object):
             loss_s2 = criterion(output_s2, labels_s)
             loss_s = loss_s1 + loss_s2
             loss_dis = self.discrepancy(output_t1, output_t2)
+            # 分类器各自的交叉熵损失-分类结果差异
+            # 希望最大化各自的分类能力，同时最大化分类差异
             loss = loss_s - loss_dis
             loss.backward()
             self.opt_c1.step()
@@ -241,6 +248,7 @@ class Solver(object):
                 output_t2 = self.C2(feat_t)
                 # 0.5还可以
                 # 这里mcc_loss系数要调一调。
+                # 两分类器的输出分布差异要小，同时最大化不同类别之间预测概率的差异性。
                 loss_dis = self.discrepancy(output_t1, output_t2)+0.5*self.mcc_loss(output_t1)
                 loss_dis.backward()
                 self.opt_g.step()
@@ -251,7 +259,7 @@ class Solver(object):
                     epoch, batch_idx, 43,
                     100. * batch_idx / 43, loss_s1.item(), loss_s2.item(), loss_dis.item()))
 
-        self.test(100)
+        # self.test(100)
         # 其实基于这种提升已经很高了。
         return batch_idx
 
@@ -428,8 +436,8 @@ class MultiCEFocalLoss(torch.nn.Module):
 # 实例化
 slover = Solver()
 # 开始训练
-for i in range(1000):
+for i in range(500):
     slover.train(epoch=i)
 
-# slover.test(100)
+slover.test(100)
 
