@@ -29,8 +29,8 @@ def dataloader_2a(number=1):
     X_train,X_test,y_train,y_test = get_dataset_subject(X, y,number)
 
     # 多余的转置操作
-    X_train=np.transpose(X_train, [0,2,1]) 
-    X_test=np.transpose(X_test, [0,2,1]) 
+    # X_train=np.transpose(X_train, [0,2,1]) 
+    # X_test=np.transpose(X_test, [0,2,1]) 
     
     #########
     # 这里我要处理一下，把他们设置为等长度的，这样用的数据就多了

@@ -7,7 +7,12 @@ os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 # every: 是否导入所有电极
 # number: 受试者数据编号
 # 返回处理好的训练集X(9,288,25,1000)，标签y(288)
+# 用于导入mat数据，并转为numpy数组格式
+# every: 是否导入所有电极
+# number: 受试者数据编号
+# 返回处理好的训练集X(9,288,25,1000)，标签y(288)
 def import_data(every=False,number=1):
+    # 是否引入所有电极
     # 是否引入所有电极
     if every:
         electrodes = 25
@@ -17,7 +22,7 @@ def import_data(every=False,number=1):
     for i in range(9):
         # if(i==number):continue
     
-        print('./data/A0' + str(i + 1) + 'T_slice.mat')
+        print('/root/autodl-tmp/data/A0' + str(i + 1) + 'T_slice.mat')
         A01T = h5py.File('./data/A0' + str(i + 1) + 'T_slice.mat', 'r')
         X1 = np.copy(A01T['image'])
         X.append(X1[:, :electrodes, :])     # 注意是append进去的，所以升了一个维度，第一维是受试者编号

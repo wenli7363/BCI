@@ -56,7 +56,7 @@ class Solver(object):
 
 
 
-        self.device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         ############定义模型
 
         self.G = models_mcd_2a.Feature(classes_num=4)
@@ -403,7 +403,7 @@ class MultiCEFocalLoss(torch.nn.Module):
             self.alpha = alpha
         self.gamma = gamma
         self.reduction = reduction
-        self.device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     def forward(self, predict, target):
 
         pt = F.softmax(predict, dim=1) # softmmax获取预测概率
@@ -428,7 +428,7 @@ class MultiCEFocalLoss(torch.nn.Module):
 # 实例化
 slover = Solver()
 # 开始训练
-for i in range(2000):
+for i in range(1000):
     slover.train(epoch=i)
 
 # slover.test(100)
