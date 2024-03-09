@@ -187,11 +187,11 @@ class Solver(object):
         # 先都用test试一试
 
         data_zip = zip(self.s_dataloaders, self.t_dataloaders)
-
         for batch_idx, ((inputs_s, labels_s), (inputs_t, labels_t)) in enumerate(data_zip):
 
-            inputs_s = inputs_s.to(self.device)
-            inputs_t = inputs_t.to(self.device)
+            # print(f"inputs_s shape: {inputs_s.shape}") 
+            inputs_s = inputs_s.to(self.device) # inputs_s shape (batch_size,1,电极数,1000)
+            inputs_t = inputs_t.to(self.device) # (batch_size)
             labels_s = labels_s.to(self.device)
             labels_t = labels_t.to(self.device)
 
@@ -200,8 +200,8 @@ class Solver(object):
             # 这里额外定义了
             
 ### 这些都是直接分开定义好
-            feat_s = self.G(inputs_s)
-            output_s1 = self.C1(feat_s)
+            feat_s = self.G(inputs_s)   # feat_s (batch_size, 496)
+            output_s1 = self.C1(feat_s) #   (batch_size, 4) 得到4个类的预测概率
             output_s2 = self.C2(feat_s)
 
 ###### 1 初始化分类器C1,C2,G
@@ -243,7 +243,9 @@ class Solver(object):
 ######## 3  固定分类器，训练特征提取器。
             for i in range(self.num_k):
                 #
-                feat_t = self.G(inputs_t)
+                feat_t = self.G(inputs_t)   # 输入数据被映射为(batch_size, 496)的特征向量。
+
+                # 分类器输入维度为(batch_size, 496),输出维度为(batch_size, 4),对应4个类别的预测概率。
                 output_t1 = self.C1(feat_t)
                 output_t2 = self.C2(feat_t)
                 # 0.5还可以

@@ -7,12 +7,7 @@ os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 # every: 是否导入所有电极
 # number: 受试者数据编号
 # 返回处理好的训练集X(9,288,25,1000)，标签y(288)
-# 用于导入mat数据，并转为numpy数组格式
-# every: 是否导入所有电极
-# number: 受试者数据编号
-# 返回处理好的训练集X(9,288,25,1000)，标签y(288)
 def import_data(every=False,number=1):
-    # 是否引入所有电极
     # 是否引入所有电极
     if every:
         electrodes = 25
