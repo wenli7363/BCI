@@ -66,8 +66,6 @@ class Solver(object):
         self.C2 = models_mcd_2a.Predictor2(4)
 
 
-
-
         ################
 
         self.G.to(self.device)
@@ -218,9 +216,11 @@ class Solver(object):
 
 ###### 2  固定特征提取 用目标域训练分类器（最大化差异） 用原领域和目标与
             self.reset_grad()
+            # 源域
             feat_s = self.G(inputs_s)
             output_s1 = self.C1(feat_s)
             output_s2 = self.C2(feat_s)
+            # 目标域
             feat_t = self.G(inputs_t)
             output_t1 = self.C1(feat_t)
             output_t2 = self.C2(feat_t)
@@ -261,7 +261,7 @@ class Solver(object):
                     epoch, batch_idx, 43,
                     100. * batch_idx / 43, loss_s1.item(), loss_s2.item(), loss_dis.item()))
 
-        # self.test(100)
+        self.test(100)
         # 其实基于这种提升已经很高了。
         return batch_idx
 
@@ -441,5 +441,5 @@ slover = Solver()
 for i in range(500):
     slover.train(epoch=i)
 
-slover.test(100)
+# slover.test(100)
 
