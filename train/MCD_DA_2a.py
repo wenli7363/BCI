@@ -24,7 +24,7 @@ class Solver(object):
     def __init__(self,  batch_size=128, number=2, learning_rate=0.001, interval=10,
                  # 优化器的类型
                  optimizer='adam'
-                 , num_k=4, alfa = 0.5):
+                 , num_k=2, alfa = 0.5):
         # 思考这个过程
         # 优先动k和学习率  k为10还是好一点 
         # 信号的尺寸也是可以调整的
@@ -219,32 +219,33 @@ class Solver(object):
             self.opt_g.step()
             self.opt_c1.step()
             self.opt_c2.step()
-
+            self.reset_grad()
 
 
 ###### 2  固定特征提取 用目标域训练分类器（最大化差异） 用原领域和目标与
-            self.reset_grad()
-            # 源域
-            feat_s = self.G(inputs_s)
-            output_s1 = self.C1(feat_s)
-            output_s2 = self.C2(feat_s)
-            # 目标域
-            feat_t = self.G(inputs_t)
-            output_t1 = self.C1(feat_t)
-            output_t2 = self.C2(feat_t)
+            for i in range(self.num_k):
+                
+                # 源域
+                feat_s = self.G(inputs_s)
+                output_s1 = self.C1(feat_s)
+                output_s2 = self.C2(feat_s)
+                # 目标域
+                feat_t = self.G(inputs_t)
+                output_t1 = self.C1(feat_t)
+                output_t2 = self.C2(feat_t)
 
 
-            loss_s1 = criterion(output_s1, labels_s)
-            loss_s2 = criterion(output_s2, labels_s)
-            loss_s = loss_s1 + loss_s2
-            loss_dis = self.discrepancy(output_t1, output_t2)
-            # 分类器各自的交叉熵损失-分类结果差异
-            # 希望最大化各自的分类能力，同时最大化分类差异
-            loss = loss_s - loss_dis
-            loss.backward()
-            self.opt_c1.step()
-            self.opt_c2.step()
-            self.reset_grad()
+                loss_s1 = criterion(output_s1, labels_s)
+                loss_s2 = criterion(output_s2, labels_s)
+                loss_s = loss_s1 + loss_s2
+                loss_dis = self.discrepancy(output_t1, output_t2)
+                # 分类器各自的交叉熵损失-分类结果差异
+                # 希望最大化各自的分类能力，同时最大化分类差异
+                loss = loss_s - loss_dis
+                loss.backward()
+                self.opt_c1.step()
+                self.opt_c2.step()
+                self.reset_grad()
 
 
 
@@ -444,42 +445,48 @@ class MultiCEFocalLoss(torch.nn.Module):
 
 #用esayTL的数据
 
-# # 实例化
-# slover = Solver()
-# # 开始训练
-# for i in range(500):
-#     slover.train(epoch=i)
+# 实例化
+slover = Solver(batch_size = 256,learning_rate = 0.005)
+# 开始训练
+for i in range(1000):
+    slover.train(epoch=i)
 
 # slover.test(100)
 
-import optuna
+# ==================================================== 调参
 
-def objective(trial):
-    batch_size = trial.suggest_int('batch_size', 32, 256)
-    lr = trial.suggest_float('lr', 1e-5, 1e-2, log=True)
-    alfa = trial.suggest_float('alfa',0.01,2.0)
+# import optuna
+
+# def objective(trial):
+#     batch_size = trial.suggest_int('batch_size', 32, 256)
+#     lr = trial.suggest_float('lr', 1e-5, 1e-2, log=True)
+#     alfa = trial.suggest_float('alfa',0.01,2.0)
     
-    # 创建Solver实例并训练
-    solver = Solver(batch_size=batch_size, learning_rate=lr,alfa = alfa)
-    for epoch in range(100):
-        solver.train(epoch)
+#     # 创建Solver实例并训练
+#     solver = Solver(batch_size=batch_size, learning_rate=lr,alfa = alfa)
+#     for epoch in range(100):
+#         solver.train(epoch)
         
-    # 在验证集上评估并返回指标
-    val_acc = solver.test(epoch)
+#     # 在验证集上评估并返回指标
+#     val_acc = solver.test(epoch)
     
-    return val_acc
+#     return val_acc
 
-study = optuna.create_study(direction='maximize')
-study.optimize(objective, n_trials=100)
+# study = optuna.create_study(direction='maximize')
+# study.optimize(objective, n_trials=100)
 
-print('Best trial:')
-trial = study.best_trial
+# print('Best trial:')
+# trial = study.best_trial
 
-# print(f'  batch_size: {trial.params["batch_size"]}')
-# print(f'  lr: {trial.params["lr"]}')
-# print(f'  accuracy: {trial.value}')
+# # print(f'  batch_size: {trial.params["batch_size"]}')
+# # print(f'  lr: {trial.params["lr"]}')
+# # print(f'  accuracy: {trial.value}')
+# best_accuracy = study.best_trial.value
 
-with open('best_params.txt', 'w') as f:
-    f.write(f'batch_size: {best_params["batch_size"]}\n')
-    f.write(f'lr: {best_params["lr"]}\n')
-    f.write(f'alfa: {best_params["alfa"]}\n')
+# with open("results.txt", "w") as f:
+#     f.write(f'Best Accuracy: {best_accuracy}\n')
+#     f.write(f'Best Parameters:\n')
+#     f.write(f'  batch_size: {study.best_trial.params["batch_size"]}\n')
+#     f.write(f'  lr: {study.best_trial.params["lr"]}\n')
+#     f.write(f'  alfa: {study.best_trial.params["alfa"]}\n')
+    

@@ -1,0 +1,5 @@
+Best Accuracy: 56.99300765991211
+Best Parameters:
+  batch_size: 204
+  lr: 0.007627867290840887
+  alfa: 0.49267693000876966

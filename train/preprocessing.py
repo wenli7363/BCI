@@ -18,7 +18,7 @@ def import_data(every=False,number=1):
         # if(i==number):continue
     
         print('/root/autodl-tmp/data/A0' + str(i + 1) + 'T_slice.mat')
-        A01T = h5py.File('./data/A0' + str(i + 1) + 'T_slice.mat', 'r')
+        A01T = h5py.File('/root/autodl-tmp/data/A0' + str(i + 1) + 'T_slice.mat', 'r')
         X1 = np.copy(A01T['image'])
         X.append(X1[:, :electrodes, :])     # 注意是append进去的，所以升了一个维度，第一维是受试者编号
         y1 = np.copy(A01T['type'])
