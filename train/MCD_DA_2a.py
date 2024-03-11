@@ -24,7 +24,7 @@ class Solver(object):
     def __init__(self,  batch_size=128, number=2, learning_rate=0.001, interval=10,
                  # 优化器的类型
                  optimizer='adam'
-                 , num_k=4):
+                 , num_k=4, alfa = 0.5):
         # 思考这个过程
         # 优先动k和学习率  k为10还是好一点 
         # 信号的尺寸也是可以调整的
@@ -34,6 +34,7 @@ class Solver(object):
 
 
         self.batch_size = batch_size
+        self.alfa = alfa
         self.num_k = num_k
         # self.checkpoint_dir = checkpoint_dir
         # self.save_epoch = save_epoch
@@ -100,7 +101,7 @@ class Solver(object):
         if which_opt == 'momentum':
             self.opt_g = optim.SGD(self.G.parameters(),
                                    lr=lr, weight_decay=0.0005,
-                                   momentum=momentum)
+                                   momentum=momentum,)
 
             self.opt_c1 = optim.SGD(self.C1.parameters(),
                                     lr=lr, weight_decay=0.0005,
@@ -117,6 +118,13 @@ class Solver(object):
                                      lr=lr, weight_decay=0.0005)
             self.opt_c2 = optim.Adam(self.C2.parameters(),
                                      lr=lr, weight_decay=0.0005)
+        if which_opt == 'adamw':
+            self.opt_g = optim.AdamW(self.G.parameters(),
+                                 lr=lr, weight_decay=0.0005)
+            self.opt_c1 = optim.AdamW(self.C1.parameters(),
+                                  lr=lr, weight_decay=0.0005)
+            self.opt_c2 = optim.AdamW(self.C2.parameters(),
+                                  lr=lr, weight_decay=0.0005)
 
 # coral 损失
 
@@ -173,7 +181,7 @@ class Solver(object):
 
     def train(self, epoch, record_file=None):
         # 定义优化器
-        #fl  = MultiCEFocalLoss(class_num=3).to(self.device)
+        # criterion  = MultiCEFocalLoss(class_num=4).to(self.device)
         criterion = nn.CrossEntropyLoss().to(self.device)
         self.G.train()
         self.C1.train()
@@ -251,7 +259,7 @@ class Solver(object):
                 # 0.5还可以
                 # 这里mcc_loss系数要调一调。
                 # 两分类器的输出分布差异要小，同时最大化不同类别之间预测概率的差异性。
-                loss_dis = self.discrepancy(output_t1, output_t2)+0.5*self.mcc_loss(output_t1)
+                loss_dis = self.discrepancy(output_t1, output_t2)+self.alfa*self.mcc_loss(output_t1)
                 loss_dis.backward()
                 self.opt_g.step()
                 self.reset_grad()
@@ -361,7 +369,8 @@ class Solver(object):
             '\nTest set: Average loss: {:.4f}, Accuracy C1: {}/{} ({:.0f}%) Accuracy C2: {}/{} ({:.0f}%) Accuracy Ensemble: {}/{} ({:.0f}%) \n'.format(
                 test_loss, correct1, size,
                 100. * correct1 / size, correct2, size, 100. * correct2 / size, correct3, size, 100. * correct3 / size))
-
+       
+        return 100. * correct3 / size
         # for batch_idx, data in enumerate(self.dataset_test):
         #     img = data['T']
         #     label = data['T_label']
@@ -435,11 +444,42 @@ class MultiCEFocalLoss(torch.nn.Module):
 
 #用esayTL的数据
 
-# 实例化
-slover = Solver()
-# 开始训练
-for i in range(500):
-    slover.train(epoch=i)
+# # 实例化
+# slover = Solver()
+# # 开始训练
+# for i in range(500):
+#     slover.train(epoch=i)
 
 # slover.test(100)
 
+import optuna
+
+def objective(trial):
+    batch_size = trial.suggest_int('batch_size', 32, 256)
+    lr = trial.suggest_float('lr', 1e-5, 1e-2, log=True)
+    alfa = trial.suggest_float('alfa',0.01,2.0)
+    
+    # 创建Solver实例并训练
+    solver = Solver(batch_size=batch_size, learning_rate=lr,alfa = alfa)
+    for epoch in range(100):
+        solver.train(epoch)
+        
+    # 在验证集上评估并返回指标
+    val_acc = solver.test(epoch)
+    
+    return val_acc
+
+study = optuna.create_study(direction='maximize')
+study.optimize(objective, n_trials=100)
+
+print('Best trial:')
+trial = study.best_trial
+
+# print(f'  batch_size: {trial.params["batch_size"]}')
+# print(f'  lr: {trial.params["lr"]}')
+# print(f'  accuracy: {trial.value}')
+
+with open('best_params.txt', 'w') as f:
+    f.write(f'batch_size: {best_params["batch_size"]}\n')
+    f.write(f'lr: {best_params["lr"]}\n')
+    f.write(f'alfa: {best_params["alfa"]}\n')

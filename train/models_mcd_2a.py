@@ -115,7 +115,6 @@ class Feature(nn.Module):
         # print("block2", x.shape)
         x = self.block_3(x)
         # print("block3", x.shape)
-
         x = x.view(x.size(0), -1)
         # print(x.shape)
         
