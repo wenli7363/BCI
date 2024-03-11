@@ -21,10 +21,10 @@ class Solver(object):
     #取掉了args
     # num_k表示训练几次特征提取器
     # number参数在这个代码中用于指定目标域的数量。
-    def __init__(self,  batch_size=128, number=2, learning_rate=0.001, interval=10,
+    def __init__(self,  batch_size=128, number=3, learning_rate=0.001, interval=10,
                  # 优化器的类型
                  optimizer='adam'
-                 , num_k=2, alfa = 0.5):
+                 , num_k=4, alfa = 0.5):
         # 思考这个过程
         # 优先动k和学习率  k为10还是好一点 
         # 信号的尺寸也是可以调整的
@@ -36,6 +36,7 @@ class Solver(object):
         self.batch_size = batch_size
         self.alfa = alfa
         self.num_k = num_k
+        self.best_ACC = 0    # 训练过程中，测试集最好的正确率
         # self.checkpoint_dir = checkpoint_dir
         # self.save_epoch = save_epoch
         # self.use_abs_diff = args.use_abs_diff
@@ -270,7 +271,9 @@ class Solver(object):
                     epoch, batch_idx, 43,
                     100. * batch_idx / 43, loss_s1.item(), loss_s2.item(), loss_dis.item()))
 
-        self.test(100)
+        tmpacc = self.test(100)
+        if tmpacc > best_ACC : 
+            best_ACC = tmpacc
         # 其实基于这种提升已经很高了。
         return batch_idx
 
