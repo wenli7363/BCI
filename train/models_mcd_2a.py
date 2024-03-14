@@ -57,7 +57,6 @@ class Feature(nn.Module):
         super(Feature, self).__init__()
         self.drop_out = 0.25
 
-        # self.pos_encoder = PositionalEncoding(d_model=22)
         self.block_1 = nn.Sequential(
             # Pads the input tensor boundaries with zero
             # left, right, up, bottom
@@ -107,21 +106,6 @@ class Feature(nn.Module):
             nn.AvgPool2d((1, 8)),  # output shape (16, 1, T//32)
             nn.Dropout(self.drop_out)
         )
-        # 新增一个卷积块 block_4
-        # self.block_4 = nn.Sequential(
-        #     nn.Conv2d(
-        #         in_channels=16,  # 输入通道数
-        #         out_channels=32,  # 输出通道数
-        #         kernel_size=(1, 8),  # 卷积核大小
-        #         padding=(0, 3),  # 填充大小
-        #         bias=False  # 是否使用偏置
-        #     ),
-        #     nn.BatchNorm2d(32),  # 批量归一化
-        #     nn.ELU(),  # 激活函数
-        #     nn.AvgPool2d((1, 4)),  # 平均池化
-        #     nn.Dropout(self.drop_out)  # Dropout正则化
-        # )
-        # self.attn = MultiHeadAttention(d_model=16, num_heads=4)
         self.self_attn = SelfAttention(in_channels=16)
         self.out = nn.Linear((496), classes_num)
 
@@ -132,14 +116,11 @@ class Feature(nn.Module):
         # print("block2", x.shape)
         x = self.block_3(x)
         # print("block3", x.shape)
-        # x = self.block_4(x)
         x = self.self_attn(x)
         x = x.view(x.size(0), -1)
         # print(x.shape)
         
         return  x  # return x for visualization
-
-
 
 
 
@@ -164,33 +145,6 @@ class Predictor2(nn.Module):
         x=self.fc1(x)
         return x
 
-
-
-#
-# data_loaders = dataloader2.dataloader(batch_size=256, type=3, ratio=8,method=None)
-# device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-#
-#
-#
-# criterion = nn.CrossEntropyLoss()
-# optimizer = optim.Adam(net.parameters(), lr=0.003)
-# train_model.train(criterion=criterion, change=False, dataloaders=data_loaders, device=device, model=net,
-#                   optimizer=optimizer, num_epochs=50)
-
-# f=Feature()
-# c=Predictor()
-# a=torch.randn(128,1,2400)
-# a=f(a)
-# a=c(a)
-# print(a.shape)
-#
-# net=Net()
-# data_loaders = dataloaders_p.dataloaders_p(file_type=3)
-# device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
-# criterion = nn.CrossEntropyLoss()
-# optimizer = optim.Adam(net.parameters(), lr=0.005)
-# train_model.train(criterion=criterion, change=False, dataloaders=data_loaders, device=device, model=net,
-#                   optimizer=optimizer, num_epochs=10)
 
 # 注意力机制
 
@@ -262,32 +216,3 @@ class SelfAttention(nn.Module):
         out = self.gamma * out + x
         return out
 
-
-
-# class SelfAttention(nn.Module):
-#     def __init__(self, in_channels):
-#         super(SelfAttention, self).__init__()
-#         self.query = nn.Conv1d(in_channels, in_channels // 8, 1)
-#         self.key = nn.Conv1d(in_channels, in_channels // 8, 1)
-#         self.value = nn.Conv1d(in_channels, in_channels, 1)
-#         self.gamma = nn.Parameter(torch.zeros(1))
-
-#     def forward(self, x):
-#         batch_size, channels, time = x.size()
-        
-#         # 计算 query, key, value
-#         proj_query = self.query(x).view(batch_size, -1, time).permute(0, 2, 1)
-#         proj_key = self.key(x).view(batch_size, -1, time)
-#         proj_value = self.value(x).view(batch_size, -1, time)
-        
-#         # 计算注意力权重
-#         energy = torch.bmm(proj_query, proj_key)
-#         attention = torch.softmax(energy, dim=-1)
-        
-#         # 注意力加权
-#         out = torch.bmm(proj_value, attention.permute(0, 2, 1))
-#         out = out.view(batch_size, channels, time)
-        
-#         # 残差连接
-#         out = self.gamma * out + x
-#         return out

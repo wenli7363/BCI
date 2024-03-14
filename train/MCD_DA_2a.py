@@ -1,4 +1,4 @@
-
+import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -37,6 +37,7 @@ class Solver(object):
         self.alfa = alfa
         self.num_k = num_k
         self.best_ACC = 0    # 训练过程中，测试集最好的正确率
+        self.number = number
         # self.checkpoint_dir = checkpoint_dir
         # self.save_epoch = save_epoch
         # self.use_abs_diff = args.use_abs_diff
@@ -272,8 +273,8 @@ class Solver(object):
                     100. * batch_idx / 43, loss_s1.item(), loss_s2.item(), loss_dis.item()))
 
         tmpacc = self.test(100)
-        if tmpacc > best_ACC : 
-            best_ACC = tmpacc
+        if tmpacc > self.best_ACC : 
+            self.best_ACC = tmpacc
         # 其实基于这种提升已经很高了。
         return batch_idx
 
@@ -375,45 +376,6 @@ class Solver(object):
                 100. * correct1 / size, correct2, size, 100. * correct2 / size, correct3, size, 100. * correct3 / size))
        
         return 100. * correct3 / size
-        # for batch_idx, data in enumerate(self.dataset_test):
-        #     img = data['T']
-        #     label = data['T_label']
-        #     img, label = img.cuda(), label.long().cuda()
-        #     img, label = Variable(img, volatile=True), Variable(label)
-        #     feat = self.G(img)
-        #     output1 = self.C1(feat)
-        #     output2 = self.C2(feat)
-        #     test_loss += F.nll_loss(output1, label).data[0]
-        #     output_ensemble = output1 + output2
-        #     pred1 = output1.data.max(1)[1]
-        #     pred2 = output2.data.max(1)[1]
-        #     pred_ensemble = output_ensemble.data.max(1)[1]
-        #     k = label.data.size()[0]
-        #     correct1 += pred1.eq(label.data).cpu().sum()
-        #     correct2 += pred2.eq(label.data).cpu().sum()
-        #     correct3 += pred_ensemble.eq(label.data).cpu().sum()
-        #     size += k
-        # test_loss = test_loss / size
-        # print(
-        #     '\nTest set: Average loss: {:.4f}, Accuracy C1: {}/{} ({:.0f}%) Accuracy C2: {}/{} ({:.0f}%) Accuracy Ensemble: {}/{} ({:.0f}%) \n'.format(
-        #         test_loss, correct1, size,
-        #         100. * correct1 / size, correct2, size, 100. * correct2 / size, correct3, size, 100. * correct3 / size))
-        # if save_model and epoch % self.save_epoch == 0:
-        #     torch.save(self.G,
-        #                '%s/%s_to_%s_model_epoch%s_G.pt' % (self.checkpoint_dir, self.source, self.target, epoch))
-        #     torch.save(self.C1,
-        #                '%s/%s_to_%s_model_epoch%s_C1.pt' % (self.checkpoint_dir, self.source, self.target, epoch))
-        #     torch.save(self.C2,
-        #                '%s/%s_to_%s_model_epoch%s_C2.pt' % (self.checkpoint_dir, self.source, self.target, epoch))
-        # if record_file:
-        #     record = open(record_file, 'a')
-        #     print('recording %s', record_file)
-        #     record.write('%s %s %s\n' % (float(correct1) / size, float(correct2) / size, float(correct3) / size))
-        #     record.close()
-
-
-
-# from label_prop import label_prop
 
 
 
@@ -446,14 +408,33 @@ class MultiCEFocalLoss(torch.nn.Module):
         return loss
 
 
-#用esayTL的数据
+# 计算九个受试者的准确率
+for i in range(1,3):
+    # 实例化
+    slover = Solver(batch_size = 256,learning_rate = 0.005, number = i)
+    
+    # 开始训练
+    start = time.time() 
+    for i in range(500):
+        slover.train(epoch=i)
+    end = time.time()
+    execution_time = end - start
 
-# 实例化
-slover = Solver(batch_size = 256,learning_rate = 0.005)
-# 开始训练
-for i in range(1000):
-    slover.train(epoch=i)
+    # write into file
+    with open("results.txt", "a") as f:
+        f.write("受试者{0}，训练时间{1}，最好的准确率是{2}\n".format(slover.number,execution_time,slover.best_ACC))
+    # slover.test(100)
 
+
+
+
+# ==================================================== 只训练一个受试者
+# # 实例化
+# slover = Solver(batch_size = 256,learning_rate = 0.005, number = 1)
+# # 开始训练
+# for i in range(1000):
+#     slover.train(epoch=i)
+# print("受试者{0}，最好的准确率是{1}".format(slover.number,slover.best_ACC))
 # slover.test(100)
 
 # ==================================================== 调参
