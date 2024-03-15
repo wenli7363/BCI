@@ -7,49 +7,6 @@ import torch.nn.functional as F
 from torch import optim
 import math
 
-# 残差卷积块
-# class BasicBlock(nn.Module):
-#     expansion = 1
-#
-#     def __init__(self, inplanes, planes, stride=1, downsample=None):
-#         super(BasicBlock, self).__init__()
-#         self.conv1 = conv1x1(inplanes, planes)  #+
-#         self.bn1 = nn.BatchNorm2d(planes)               #+
-#         self.conv2 = conv3x3(planes, planes, stride)
-#         self.bn2 = nn.BatchNorm2d(planes)
-#         self.relu = nn.ReLU(inplace=True)
-#         self.conv3 = conv3x3(planes, planes)
-#         self.bn3 = nn.BatchNorm2d(planes)
-#         #self.conv4 = conv1x1(planes, planes)
-#        # self.bn4 = nn.BatchNorm2d(planes)
-#         self.downsample = downsample
-#         self.stride = stride
-#
-#     def forward(self, x):
-#         identity = x
-#
-#         out = self.conv1(x)
-#         out = self.bn1(out)
-#         out = self.relu(out)
-#
-#         out = self.conv2(out)
-#         out = self.bn2(out)
-#         out = self.relu(out)
-#
-#         out = self.conv3(out)
-#         out = self.bn3(out)
-#        # out = self.relu(out)
-#
-#        # out = self.conv4(out)
-#        # out = self.bn4(out)
-#
-#         if self.downsample is not None:
-#             identity = self.downsample(x)
-#
-#         out += identity
-#         out = self.relu(out)
-#
-#         return out
 
 # 特征提取器
 class Feature(nn.Module):
@@ -124,7 +81,6 @@ class Feature(nn.Module):
 
 
 
-
 class Predictor1(nn.Module):
     def __init__(self, class_num):
         super(Predictor1, self).__init__()
@@ -147,43 +103,6 @@ class Predictor2(nn.Module):
 
 
 # 注意力机制
-
-class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, max_len=1000):
-        super(PositionalEncoding, self).__init__()
-        pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        pe = pe.unsqueeze(0)
-        self.register_buffer('pe', pe)
-
-    def forward(self, x):
-        return x + self.pe[:, :x.size(2), :]
-
-
-class MultiHeadAttention(nn.Module):
-    def __init__(self, d_model, num_heads):
-        super(MultiHeadAttention, self).__init__()
-        self.num_heads = num_heads
-        self.d_model = d_model
-        self.d_k = d_model // num_heads
-        self.v_linear = nn.Linear(d_model, d_model, bias=False)
-        self.q_linear = nn.Linear(d_model, d_model, bias=False)
-        self.k_linear = nn.Linear(d_model, d_model, bias=False)
-        self.attention = nn.MultiheadAttention(d_model, num_heads)
-
-    def forward(self, x):
-        batch_size = x.size(0)
-        v = self.v_linear(x).view(batch_size, -1, self.num_heads, self.d_k).transpose(1, 2)
-        q = self.q_linear(x).view(batch_size, -1, self.num_heads, self.d_k).transpose(1, 2)
-        k = self.k_linear(x).view(batch_size, -1, self.num_heads, self.d_k).transpose(1, 2)
-        attn_output, attn_output_weights = self.attention(q, k, v)
-        attn_output = attn_output.transpose(1, 2).contiguous().view(batch_size, -1, self.d_model)
-        return attn_output
-
-
 class SelfAttention(nn.Module):
     def __init__(self, in_channels):
         super(SelfAttention, self).__init__()
@@ -215,4 +134,3 @@ class SelfAttention(nn.Module):
         # 残差连接
         out = self.gamma * out + x
         return out
-

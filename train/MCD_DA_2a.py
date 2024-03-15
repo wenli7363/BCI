@@ -409,13 +409,13 @@ class MultiCEFocalLoss(torch.nn.Module):
 
 
 # 计算九个受试者的准确率
-for i in range(1,3):
+for i in range(1,10):
     # 实例化
     slover = Solver(batch_size = 256,learning_rate = 0.005, number = i)
     
     # 开始训练
     start = time.time() 
-    for i in range(500):
+    for i in range(1000):
         slover.train(epoch=i)
     end = time.time()
     execution_time = end - start
