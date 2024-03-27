@@ -46,7 +46,7 @@ class EEGDataCollectionUI(QWidget):
             curve = self.plot_item.plot(pen=pen)
             self.curves.append(curve)
 
-        self.eeg_data_layout.addWidget(self.plot_widget)
+        self.eeg_data_layout.addWidget(self.plot_widget,stretch=5)
 
         # 添加通道选择框
         self.channel_selection_layout = QVBoxLayout()
@@ -72,7 +72,7 @@ class EEGDataCollectionUI(QWidget):
         self.eeg_data_layout.addLayout(self.channel_selection_layout)
 
         self.eeg_data_area.setLayout(self.eeg_data_layout)
-        self.main_area_layout.addWidget(self.eeg_data_area, stretch=4)  # 设置拉伸因子为4
+        self.main_area_layout.addWidget(self.eeg_data_area, stretch=3)  # 设置拉伸因子为4
 
         # 右侧控制区域
         self.control_area = QFrame()
@@ -86,6 +86,8 @@ class EEGDataCollectionUI(QWidget):
         # serial_config_button = QPushButton("可选串口设备")
         self.serial_config_combox = QComboBox()
         self.serial_config_combox.addItem("COM1")
+        self.serial_config_combox.addItem("COM2")
+        self.serial_config_combox.addItem("COM3")
         self.control_area_layout.addWidget(self.serial_config_combox)
 
         self.connect_button = QPushButton("连接设备")
@@ -132,6 +134,24 @@ class EEGDataCollectionUI(QWidget):
         self.curves[channel_index].setVisible(state == 2)  # 2表示选中状态
 
     def initConnect(self):
-        self.two_class_button.clicked.connect(lambda: self.logger.log("开始二分类数据采集"))        # 二分类按钮点击事件
-        self.four_class_button.clicked.connect(lambda: self.logger.log("开始四分类数据采集"))       # 四分类按钮点击事件
+        self.two_class_button.clicked.connect(self.on_2class_button_clicked)        # 二分类按钮点击事件
+        self.four_class_button.clicked.connect(self.on_4class_button_clicked)       # 四分类按钮点击事件
         self.logger.log_signal.connect(lambda msg: self.log_area.append(msg))                       # 日志记录器信号连接到日志区域
+        self.connect_button.clicked.connect(self.on_connect_button_clicked)                         # 串口连接按钮点击事件 
+        self.disconnect_button.clicked.connect(self.on_disconnect_button_clicked)                   # 串口断开按钮点击事件
+
+
+    "槽函数，用于处理串口连接按钮点击事件"
+    def on_connect_button_clicked(self):
+        selected_port = self.serial_config_combox.currentText()
+        self.logger.log("连接到设备:{}".format(selected_port))
+        self.serial_config_label.setText("设备连接状态：已连接")
+    
+    def on_disconnect_button_clicked(self):
+        self.logger.log("断开设备连接")
+
+    def on_2class_button_clicked(self):
+        self.logger.log("开始二分类数据采集")
+    
+    def on_4class_button_clicked(self):
+        self.logger.log("开始四分类数据采集")
