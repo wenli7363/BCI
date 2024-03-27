@@ -13,6 +13,7 @@ class EEGDataCollectionUI(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.initConnect()
 
     def initUI(self):
         # 创建主布局
@@ -99,9 +100,9 @@ class EEGDataCollectionUI(QWidget):
 
         self.resolution_layout = QHBoxLayout()
         self.two_class_button = QPushButton("二分类")
-        self.two_class_button.clicked.connect(lambda: self.logger.log("开始二分类数据采集"))
+        
         self.four_class_button = QPushButton("四分类")
-        self.four_class_button.clicked.connect(lambda: self.logger.log("开始四分类数据采集"))
+        
         self.resolution_layout.addWidget(self.two_class_button)
         self.resolution_layout.addWidget(self.four_class_button)
         self.control_area_layout.addLayout(self.resolution_layout)
@@ -115,7 +116,7 @@ class EEGDataCollectionUI(QWidget):
 
         # 日志记录器
         self.logger = Logger()
-        self.logger.log_signal.connect(lambda msg: self.log_area.append(msg))
+
         self.control_area.setLayout(self.control_area_layout)
         self.main_area_layout.addWidget(self.control_area, stretch=1)  # 设置拉伸因子为1
 
@@ -129,9 +130,8 @@ class EEGDataCollectionUI(QWidget):
         Toggle visibility of EEG channels based on checkbox state.
         """
         self.curves[channel_index].setVisible(state == 2)  # 2表示选中状态
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    mw = EEGDataCollectionUI()
-    mw.show()
-    sys.exit(app.exec_())
 
+    def initConnect(self):
+        self.two_class_button.clicked.connect(lambda: self.logger.log("开始二分类数据采集"))        # 二分类按钮点击事件
+        self.four_class_button.clicked.connect(lambda: self.logger.log("开始四分类数据采集"))       # 四分类按钮点击事件
+        self.logger.log_signal.connect(lambda msg: self.log_area.append(msg))                       # 日志记录器信号连接到日志区域
