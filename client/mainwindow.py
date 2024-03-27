@@ -6,7 +6,8 @@ from PyQt5.QtWidgets import (
 )
 import pyqtgraph as pg
 from logger import Logger
-import sys
+import twoclass
+import worker
 
 
 class EEGDataCollectionUI(QWidget):
@@ -152,6 +153,9 @@ class EEGDataCollectionUI(QWidget):
 
     def on_2class_button_clicked(self):
         self.logger.log("开始二分类数据采集")
+        self.eeg_collection_window = twoclass.TwoClassUI()
+        self.eeg_collection_window.show()
+
     
     def on_4class_button_clicked(self):
         self.logger.log("开始四分类数据采集")
