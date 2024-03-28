@@ -1,54 +1,185 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QApplication
-from PyQt5.QtCore import QTimer
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget,QLineEdit,QPushButton,QTextEdit
+from PyQt5.QtGui import QPainter, QPen, QPainterPath, QPixmap, QFont
+from PyQt5.QtCore import Qt, QTimer, QRectF
+import random
+import winsound
 
-class TwoClassUI(QWidget):
+class TwoClassUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.initUI()
-        self.prepareTime = 5  # 准备阶段时间（秒）
-        self.imageryTime = 5  # 运动想象时间（秒）
-        self.restTime = 5     # 休息时间（秒）
-        self.currentPhase = "准备"  # 当前阶段：准备、运动想象、休息
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.updateState)
+        # self.initUI()
+        self.showStart()
+        self.total_trial = 0
+        self.max_trials = 12
+        self.num_trials = {'left':0,'right':0}
+    
+    def showStart(self):
+        # 设置窗口的标题和初始位置
+        self.setWindowTitle('左右手二分类')
+        self.setGeometry(100, 100, 400, 400)
 
+        # 创建一个 QWidget 作为中央部件
+        central_widget = QWidget(self)
+        self.setCentralWidget(central_widget)
+
+        # 创建 QVBoxLayout 来组织布局
+        layout = QVBoxLayout(central_widget)
+
+        tip = "说明：\n左右运动想象数据采集，每次测试从bee声开始，有2s集中注意，4s想象，2秒休息组成，一组实验总共持续8s"
+        font = QFont()
+        font.setPointSize(15)  # 设置字体大小为 12
+        self.tip_text = QLabel(tip, self)
+        # self.tip_text.setReadOnly(True)
+        self.tip_text.setFont(font)
+        self.tip_text.setWordWrap(True)
+
+        layout.addWidget(self.tip_text)
+
+        # 创建 QLabel 和 QLineEdit 输入框
+        self.label1 = QLabel('每组采集次数:', self)
+        self.lineEdit1 = QLineEdit(self)
+        layout.addWidget(self.label1)
+        layout.addWidget(self.lineEdit1)
+
+        # self.label2 = QLabel('Input 2:', self)
+        # self.lineEdit2 = QLineEdit(self)
+        # layout.addWidget(self.label2)
+        # layout.addWidget(self.lineEdit2)
+
+        # 创建一个按钮
+        self.button = QPushButton('开始采集', self)
+        layout.addWidget(self.button)
+
+        self.button.clicked.connect(self.showInputs)
+
+    def showInputs(self):
+        # 当按钮被点击时，获取输入框的内容，并显示在标签上
+        input1 = self.lineEdit1.text()
+        # input2 = self.lineEdit2.text()
+
+        self.label1.setText(f'You entered: {input1}')
+        # self.label2.setText(f'You entered: {input2}')
+        
     def initUI(self):
-        self.layout = QVBoxLayout()
-        self.instructionLabel = QLabel("按下开始按钮，准备运动想象")
-        self.layout.addWidget(self.instructionLabel)
-        self.startButton = QPushButton("开始")
-        self.startButton.clicked.connect(self.startImageryProcess)
-        self.layout.addWidget(self.startButton)
-        self.setLayout(self.layout)
-        self.setWindowTitle("脑电数据采集")
+        self.setGeometry(100, 100, 400, 400)
+        self.setWindowTitle('Fixation Cross with Random Arrows')
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+        self.layout = QVBoxLayout(self.central_widget)
+        
+        self.label = QLabel(self)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.layout.addWidget(self.label)
+        
+        # Timer setup
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.showRandomArrow)
+        self.timer.start(8000)  # 8 seconds interval
+        
+        # self.showFixationCross()
+        
+    def showFixationCross(self):
+        pixmap = QPixmap(400, 400)
+        pixmap.fill(Qt.white)
+        painter = QPainter(pixmap)
+        pen = QPen(Qt.black, 5)
+        painter.setPen(pen)
+        
+        # Draw the fixation cross
+        center_x = pixmap.width() / 2
+        center_y = pixmap.height() / 2
+        painter.drawLine(center_x, center_y - 30, center_x, center_y + 30)
+        painter.drawLine(center_x - 30, center_y, center_x + 30, center_y)
+        painter.end()
+        
+        self.label.setPixmap(pixmap)
+        winsound.Beep(500,1000)
+        
+        
+    def drawArrow(self, painter, direction):
+        # Define the path for the arrow
+        arrow_path = QPainterPath()
+        center_x = painter.device().width() / 2
+        center_y = painter.device().height() / 2
+        
+        painter.translate(center_x, center_y)
+        
+        if  direction == 'left':
+            arrow_path.moveTo(-150, 0)
+            arrow_path.lineTo(-50, -50)
+            arrow_path.lineTo(-50, 50)
+        elif direction == 'right':
+            arrow_path.moveTo(150, 0)
+            arrow_path.lineTo(50, -50)
+            arrow_path.lineTo(50, 50)
+        arrow_path.closeSubpath()
+        
+        # Draw the arrow
+        painter.drawPath(arrow_path)
+        
+    def showRandomArrow(self):
+        pixmap = QPixmap(400, 400)
+        pixmap.fill(Qt.white)
+        painter = QPainter(pixmap)
+        pen = QPen(Qt.black, 5)
+        painter.setPen(pen)
+        
+        # Draw the fixation cross
+        center_x = pixmap.width() / 2
+        center_y = pixmap.height() / 2
+        painter.drawLine(center_x, center_y - 30, center_x, center_y + 30)
+        painter.drawLine(center_x - 30, center_y, center_x + 30, center_y)
+        
+        # Randomly choose a direction for the arrow
+        
+        directions = ['left', 'right']
+        direction = random.choice(directions)
+        
+        while(self.num_trials[direction] == self.max_trials):
+            if(self.total_trial == self.max_trials * 2) :
+                print("已经采集了{}次trails".format(self.total_trial))
+                return
+            direction = random.choice(directions)
+            
+        self.num_trials[direction] +=1
+        self.total_trial += 1
+        # Draw the arrow
+        self.drawArrow(painter, direction)
+        painter.end()
+        
+        self.label.setPixmap(pixmap)
 
-    def startImageryProcess(self):
-        self.startButton.setDisabled(True)  # 开始后禁用开始按钮
-        self.timer.start(1000)  # 设置定时器1000ms
-        self.countdown = self.prepareTime
-        self.instructionLabel.setText("准备阶段...")
+    def drawText(self, painter, text):
+        # Set the font and draw the text
+        font = painter.font()
+        font.setPointSize(24)  # Set the font size
+        painter.setFont(font)
+        painter.drawText(QRectF(0, 0, 400, 400), Qt.AlignCenter, text)
 
-    def updateState(self):
-        self.countdown -= 1
-        if self.countdown <= 0:
-            if self.currentPhase == "准备":
-                self.currentPhase = "运动想象"
-                self.countdown = self.imageryTime
-                self.instructionLabel.setText("开始运动想象！")
-            elif self.currentPhase == "运动想象":
-                self.currentPhase = "休息"
-                self.countdown = self.restTime
-                self.instructionLabel.setText("休息阶段...")
-            elif self.currentPhase == "休息":
-                self.currentPhase = "准备"
-                self.countdown = self.prepareTime
-                self.instructionLabel.setText("按下开始按钮，准备运动想象")
-                self.timer.stop()  # 停止定时器
-                self.startButton.setEnabled(True)  # 重新启用开始按钮
-                return  # 退出函数，等待用户再次启动
-        # 更新状态显示（可选）
-        self.updateDisplay()
+    def showImaginationPrompt(self):
+        pixmap = QPixmap(400, 400)
+        pixmap.fill(Qt.white)
+        painter = QPainter(pixmap)
+        painter.setFont(QFont("Arial", 24))  # Set the font and size
 
-    def updateDisplay(self):
-        # 此函数可以根据需要更新UI显示，例如显示倒计时
-        pass
+        # Draw the text "开始想象"
+        self.drawText(painter, "开始想象")
+        painter.end()
+
+        self.label.setPixmap(pixmap)
+
+    def showRestMessage(self):
+        pixmap = QPixmap(400, 400)
+        pixmap.fill(Qt.white)
+        painter = QPainter(pixmap)
+        painter.setFont(QFont("Arial", 24))  # Set the font and size
+
+        # Draw the text "休息"
+        self.drawText(painter, "休息...")
+        painter.end()
+
+        self.label.setPixmap(pixmap)
+
+    def dataCollect(self):
+        self.initUI()
