@@ -8,8 +8,8 @@ import winsound
 class TwoClassUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.initUI()
-        # self.showStart()
+        # self.initUI()
+        self.startCollect()
         self.total_trial = 0
         self.max_trials = 12
         self.num_trials = {'left':0,'right':0}
@@ -30,7 +30,7 @@ class TwoClassUI(QMainWindow):
         tip = "<div align='center'><b>说明</b></div><br />" \
               "<div align='left'>左右运动想象数据采集，每次测试从bee声开始，有2s集中注意，4s想象，2秒休息组成，一组实验总共持续8s</div>"
         font = QFont()
-        font.setPointSize(15)
+        font.setPointSize(14)
 
         self.tip_text = QLabel(tip, self)
         self.tip_text.setFont(font)
@@ -72,33 +72,26 @@ class TwoClassUI(QMainWindow):
         self.button = QPushButton('开始采集', self)
         layout.addWidget(self.button)
 
-        self.button.clicked.connect(self.showInputs)
+        self.button.clicked.connect(self.startCollect)
 
-    def showInputs(self):
-        # 当按钮被点击时，获取输入框的内容，并显示在标签上
-        input1 = self.lineEdit1.text()
-        # input2 = self.lineEdit2.text()
-
-        self.label1.setText(f'You entered: {input1}')
-        # self.label2.setText(f'You entered: {input2}')
+    def startCollect(self):
+        # pass
+        self.setGeometry(100, 100, 400, 400)
+        self.setWindowTitle('Fixation Cross with Random Arrows')
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+        self.layout = QVBoxLayout(self.central_widget)
         
-    # def initUI(self):
-    #     self.setGeometry(100, 100, 400, 400)
-    #     self.setWindowTitle('Fixation Cross with Random Arrows')
-    #     self.central_widget = QWidget()
-    #     self.setCentralWidget(self.central_widget)
-    #     self.layout = QVBoxLayout(self.central_widget)
+        self.label = QLabel(self)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.layout.addWidget(self.label)
         
-    #     self.label = QLabel(self)
-    #     self.label.setAlignment(Qt.AlignCenter)
-    #     self.layout.addWidget(self.label)
+        # Timer setup
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.showRandomArrow)
+        self.timer.start(8000)  # 8 seconds interval
         
-    #     # Timer setup
-    #     self.timer = QTimer(self)
-    #     self.timer.timeout.connect(self.showRandomArrow)
-    #     self.timer.start(8000)  # 8 seconds interval
-        
-    #     # self.showFixationCross()
+        self.showFixationCross()
         
     def showFixationCross(self):
         pixmap = QPixmap(400, 400)
