@@ -1,6 +1,6 @@
 import array
 
-# 脑电信号数据包的数据类
+# 脑电信号数据包
 class EEGPacketData:
     def __init__(self, raw_data: str, frame_header: bytes, info: bytes):
         self.raw_data = raw_data  # 原始数据的十六进制格式
