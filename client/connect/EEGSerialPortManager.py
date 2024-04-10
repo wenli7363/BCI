@@ -1,104 +1,106 @@
 import serial
 import threading
 import logging
-import EEGDataDriver
+from queue import Queue
+from EEGDataDriver import EEGDataDriver
 
-# 设置日志记录器
+eeg_driver = EEGDataDriver()
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class EEGSerialPortManager:
-    SERIAL_PORT_NAME = "COM3"  # 串口名
-    SERIAL_BAUD_RATE = 460800  # 波特率
-    EEG_DATA_PACKET_LENGTH = 204  # 数据包长度
-    SEND_DATA_ORDER = "55AA0201"  # 发送数据的命令字符串
+SERIAL_PORT_NAME = "COM3"  # 串口名
+SERIAL_BAUD_RATE = 460800  # 波特率
+EEG_DATA_PACKET_LENGTH = 204  # 数据包长度
+SEND_DATA_ORDER = b"\x55\xAA\x02\x01"  # 发送数据的命令字节串
 
+message_queue = Queue()
+
+class EEGSerialPortManager:
     def __init__(self):
         self.serial_port = None
+        self.serial_thread = None
 
-    # 尝试打开指定的串口。
     def open_serial_port(self):
         try:
-            # self.serial_port = serial.Serial(port=self.SERIAL_PORT_NAME, baudrate=self.SERIAL_BAUD_RATE)
-            self.serial_port = serial.Serial(port=self.SERIAL_PORT_NAME,
-                                 baudrate=self.SERIAL_BAUD_RATE,
-                                 bytesize=serial.EIGHTBITS,
-                                 parity=serial.PARITY_NONE,
-                                 stopbits=serial.STOPBITS_ONE)
-            logger.info(f"Opened serial port: {self.SERIAL_PORT_NAME}")
-            return True
-        except serial.SerialException as e:
+            self.serial_port = serial.Serial(SERIAL_PORT_NAME, SERIAL_BAUD_RATE)
+            if self.serial_port.is_open:
+                logger.info("Serial port opened successfully")
+                return True
+        except Exception as e:
             logger.error(f"Failed to open serial port: {e}")
-            return False
+        return False
 
-    # 配置串口
     def config_serial_port(self):
-        if self.serial_port is not None and self.serial_port.isOpen():
-            thread = threading.Thread(target=self.listen_to_serial_port)
-            thread.daemon = True
-            thread.start()
+        if self.serial_port is not None and self.serial_port.is_open:
+            self.serial_thread = threading.Thread(target=self.serial_listener,args=(message_queue,))
+            self.serial_thread.daemon = True
+            self.serial_thread.start()
+            logger.info("Serial port listener thread started")
         else:
-            logger.error("Serial port is not open.")
+            logger.error("Serial port is not open, cannot configure")
 
-    # 监听串口数据
-    def listen_to_serial_port(self):
-        while True:
+    def serial_listener(self,q):
+        while self.is_serial_port_open():
             try:
-                if self.serial_port.in_waiting > 0:
-                    read_buffer = self.serial_port.read(self.serial_port.in_waiting)
-                    bytes_num = len(read_buffer)
-                    # 如果是完整的数据包，就处理
-                    if bytes_num == self.EEG_DATA_PACKET_LENGTH:
-                        EEGDataDriver.parse_sampling(read_buffer)  # 开始处理脑电数据
-                    else:
-                        packet_num = bytes_num // self.EEG_DATA_PACKET_LENGTH
-                        for i in range(packet_num):
-                            single_packet_data = read_buffer[i * self.EEG_DATA_PACKET_LENGTH:
-                                                             (i + 1) * self.EEG_DATA_PACKET_LENGTH]
-                            EEGDataDriver.parse_sampling(single_packet_data)  # 开始处理脑电数据
-            except serial.SerialException as e:
-                logger.error(f"Serial port error: {e}") 
+                if self.serial_port.in_waiting >= EEG_DATA_PACKET_LENGTH:
+                    read_buffer = self.serial_port.read(EEG_DATA_PACKET_LENGTH)
+                    # self.parse_sampling(read_buffer)
+                    eeg_driver.parse_sampling(read_buffer)
+                    # q.put(eeg_driver.parse_sampling(read_buffer))
 
-    # 向串口发送数据
-    def send_data(self, data):
-        if self.serial_port is not None and self.serial_port.isOpen():
-            try:
-                data_bytes = bytes.fromhex(data)
-                self.serial_port.write(data_bytes)
-                logger.info(f"Sent data: {data}")
-                return len(data_bytes)
-            except serial.SerialException as e:
-                logger.error(f"Failed to send data: {e}")
-                return 0
-        else:
-            logger.error("Serial port is not open.")
-            return 0
+                    # q.put(read_buffer)
+            except Exception as e:
+                logger.error(f"Serial port listener error: {e}")
+                if not self.is_serial_port_open():
+                    self.open_serial_port()
 
-    # 发送一个特定的命令字符串到串口，并记录发送结果
-    def request_data(self):
-        if self.send_data(self.SEND_DATA_ORDER) == 0:
-            logger.error("Failed to send command 55AA0201")
-        else:
-            logger.info("Sent command 55AA0201")
+    @staticmethod
+    def parse_sampling(data):
+        # Placeholder for parsing EEG data
+        logger.info(f"Parsing EEG data: {data}")
 
-    # 关闭串口
     def close_serial_port(self):
-        if self.serial_port is not None and self.serial_port.isOpen():
+        if self.serial_port     is not None and self.serial_port.is_open:
             self.serial_port.close()
-            logger.info("Closed serial port.")
+            logger.info("Serial port closed")
         else:
-            logger.error("Serial port is not open.")
+            logger.error("Serial port is not open, cannot close")
 
-    # 判断串口是否打开
+    def send_data(self, data):
+        if self.serial_port is not None and self.serial_port.is_open:
+            try:
+                self.serial_port.write(data)
+                logger.info("Data sent successfully")
+                return len(data)
+            except Exception as e:
+                logger.error(f"Failed to send data: {e}")
+        else:
+            logger.error("Serial port is not open, cannot send data")
+        return 0
+
+    def request_data(self):
+        if self.send_data(SEND_DATA_ORDER) == 0:
+            logger.error("Failed to send data: 55AA0201")
+        else:
+            logger.info("Data sent successfully: 55AA0201")
+
     def is_serial_port_open(self):
-        return self.serial_port is not None and self.serial_port.isOpen()
+        if self.serial_port is not None:
+            return self.serial_port.is_open
+        return False
 
-# 创建EEGSerialPortManager实例
-eeg_serial_port_manager = EEGSerialPortManager()
-# 尝试打开串口
-if eeg_serial_port_manager.open_serial_port():
-    # 配置串口
-    eeg_serial_port_manager.config_serial_port()
-    # 发送请求数据命令
-    eeg_serial_port_manager.request_data()
-else:
-    logger.error("Failed to open serial port.")
+
+# if __name__ == "__main__":
+#     eeg_serial_manager = EEGSerialPortManager()
+#     if eeg_serial_manager.open_serial_port():
+#         eeg_serial_manager.config_serial_port()
+#         # Example usage:
+#         eeg_serial_manager.request_data()
+#         # if eeg_serial_manager.is_serial_port_open():
+#         #     # Do something
+
+#         # else:
+#         #     # Handle serial port not open
+#     else:
+#         logger.error("Failed to open serial port")

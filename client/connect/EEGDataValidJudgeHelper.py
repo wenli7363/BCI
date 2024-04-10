@@ -1,8 +1,6 @@
 # 有效性校验，检查帧头是否正确
 
-class EEGDataValidJudgeHelper:
-    FRAME_HEADER = bytes([0xAA, 0x55])  # 帧头
+FRAME_HEADER = bytes([0xAA, 0x55])  # 帧头
 
-    @staticmethod
-    def is_valid_of_frame_header(frame_header):
-        return frame_header == EEGDataValidJudgeHelper.FRAME_HEADER
+def is_valid_of_frame_header(frame_header):
+    return frame_header == FRAME_HEADER

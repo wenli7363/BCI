@@ -2,8 +2,8 @@ import json
 import time
 import csv
 from typing import List
-import EEGPacketDataParser
 import EEGDataValidJudgeHelper
+from EEGPacketDataParser import parse_packet,parse_info_data
 
 class EEGDataDriver:
     def __init__(self):
@@ -23,10 +23,11 @@ class EEGDataDriver:
     def parse_sampling(self, input: bytes):
         # raw_str = self.bytes_to_hex_string(input)
         # Assuming EEGPacketData and EEGInfoData classes are defined elsewhere
-        eeg_packet_data = EEGPacketDataParser.parse_packet(input)
-        if EEGDataValidJudgeHelper.is_valid_of_frame_header(eeg_packet_data):
+        eeg_packet_data = parse_packet(input)
+        
+        if EEGDataValidJudgeHelper.is_valid_of_frame_header(eeg_packet_data.frame_header):
             try:
-                eeg_info_data = EEGPacketDataParser.parse_info_data(eeg_packet_data.info, self.is50HzComb, self.is40HzLowPass)
+                eeg_info_data = parse_info_data(eeg_packet_data.info, self.is50HzComb, self.is40HzLowPass)
                 for eeg_channel in eeg_info_data.eeg_data.eeg_list_channel:
                     for i in range(self.dataChannel):
                         self.eegData[i][self.dataIndex] = eeg_channel.eeg_value[i]

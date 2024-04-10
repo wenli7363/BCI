@@ -1,8 +1,6 @@
-import EEGDataBean
-
 class EEGInfoDataBean:
-    def __init__(self, eeg_data: EEGDataBean):
-        self.eeg_data : EEGDataBean = eeg_data
+    def __init__(self, eeg_data):
+        self.eeg_data = eeg_data
         self.checksum = None  # 初始化为 None
 
     def get_eeg_data(self):

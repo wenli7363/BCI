@@ -1,61 +1,60 @@
 import numpy as np
-from rx import subject
-import EEGDataFilterUtil
-import EEGDataBean
+from rx.subject import Subject
+from EEGDataFilterUtil import combFilter, lowPass40HzFilter
+from EEGDataBean import EEGDataBean, EEGChannelBean
 
-class EEGDataTransformHelper:
-    channel_count = 32    # 通道数
-    data_count = 1        # 每个通道的数据点数量
+channelCount = 32  # 通道数
+dataCount = 1  # 每个通道的数据点数量
 
-    is_50Hz_comb = False
-    is_40Hz_low_pass = False
-    is_70Hz_low_pass = False
+is50HzComb = False
+is40HzLowPass = False
+is70HzLowPass = False
 
-    def __init__(self):
-        self.logger = None
-        self.TAG = "DataTransformHelper"
-        self.ADC = 8388608  # ADC
-        self.BASE_VOLTAGE = 4.5  # 基准电压
-        self.EEG1_CIR_GAIN = 12  # 脑电1默认有12倍增益
-        self.EEG2_CIR_GAIN = 12  # 脑电2默认有12倍增益
-        self.vpp_value = [0.0] * 64
-        self.buffer_size = 2000
-        self.vpp_buffer = np.zeros((64, self.buffer_size))
-        self.offset_vpp = [0] * 64
-        self.vpp_ok = subject.Subject()
+TAG = "DataTransformHelper"
 
-    def parse_eeg_data_no_flag(self, data, comb, low_pass):
-        eeg_list = []
-        for i in range(self.data_count):
-            eeg_data = EEGDataBean.EEGChannelBean(True, True)
-            for j in range(self.channel_count):
-                high = data[i * (self.channel_count * 3) + j * 3 + 2]
-                middle = data[i * (self.channel_count * 3) + j * 3 + 1]
-                low = data[i * (self.channel_count * 3) + j * 3]
-                # value = self.put_byte_3(low, middle, high)
-                value = (low << 16) | (middle << 8) | high
-                raw_value = self.eeg_data_transform(value)
-                if comb:
-                    raw_value = EEGDataFilterUtil.comb_filter(raw_value, j)
-                if low_pass:
-                    raw_value = EEGDataFilterUtil.low_pass_40Hz_filter(raw_value, j)
-                self.vpp_transform(raw_value, j)
-                eeg_data.eeg_value[j] = raw_value
-            eeg_list.append(eeg_data)
-        return EEGDataBean(eeg_list)
+ADC = 8388608  # ADC
+BASE_VOLTAGE = 4.5  # 基准电压
+EEG1_CIR_GAIN = 12  # 脑电1默认有12倍增益
+EEG2_CIR_GAIN = 12  # 脑电2默认有12倍增益
 
-    def eeg_data_transform(self, i):
-        if i > self.ADC:
-            i = (i - 2 * self.ADC)
-        return (i * self.BASE_VOLTAGE * 1000 / self.ADC / self.EEG1_CIR_GAIN)
+BUFFER_SIZE = 2000
+vppBuffer = np.zeros((64, BUFFER_SIZE))
+offsetVpp = np.zeros(64, dtype=int)
+vppOk = Subject()
 
-    def vpp_transform(self, data, i):
-        self.vpp_buffer[i][self.offset_vpp[i]] = data
-        self.offset_vpp[i] += 1
+vppValue = np.zeros(64)
 
-        if self.offset_vpp[i] == self.buffer_size:
-            self.offset_vpp[i] = 0
-            v_max = np.amax(self.vpp_buffer[i])
-            v_min = np.amin(self.vpp_buffer[i])
-            self.vpp_value[i] = v_max - v_min
-            self.vpp_ok.on_next(self.vpp_value)
+def parseEEGDataNoFlag(data, comb, lowPass):
+    eegList = []
+    for _ in range(dataCount):
+        eegData = EEGChannelBean(True, True)
+        for j in range(channelCount):
+            high = data[_ * (channelCount * 3) + j * 3 + 2]
+            middle = data[_ * (channelCount * 3) + j * 3 + 1]
+            low = data[_ * (channelCount * 3) + j * 3]
+            value = (low << 16) | (middle << 8) | high
+            rawValue = eegDataTransform(value)
+            if comb:
+                rawValue = combFilter(rawValue, j)
+            if lowPass:
+                rawValue = lowPass40HzFilter(rawValue, j)
+            vppTransform(rawValue, j)
+            eegData.eeg_value[j] = rawValue
+        eegList.append(eegData)
+    return EEGDataBean(eegList)
+
+def eegDataTransform(i):
+    if i > ADC:
+        i -= 2 * ADC
+    return i * BASE_VOLTAGE * 1000 / ADC / EEG1_CIR_GAIN
+
+def vppTransform(data, i):
+    global offsetVpp, vppBuffer, vppValue
+    vppBuffer[i][offsetVpp[i]] = data
+    offsetVpp[i] += 1
+    if offsetVpp[i] == BUFFER_SIZE:
+        offsetVpp[i] = 0
+        vMax = np.max(vppBuffer[i])
+        vMin = np.min(vppBuffer[i])
+        vppValue[i] = vMax - vMin
+        vppOk.on_next(vppValue)
