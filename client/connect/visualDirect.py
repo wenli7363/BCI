@@ -5,12 +5,10 @@ import threading
 from EEGSerialPortManager import EEGSerialPortManager,SERIAL_PORT_NAME
 from time import sleep
 
+
 # 创建EEG数据驱动和串口管理器实例
 eeg_serial_port_manager = EEGSerialPortManager()
-
-shift = 10
-window_size = 250
-window_data = np.zeros((32,window_size))
+# eeg_driver = EEGDataDriver()
 
 # 尝试打开串口
 if eeg_serial_port_manager.open_serial_port():
@@ -27,8 +25,10 @@ def get_eeg_data():
     return  -50 + (50 - (-50)) *np.random.rand(32, 125)
     # return np.array(eeg_serial_port_manager.eeg_driver.get_eeg_data())
 
+
+
 # 获取脑电数据
-old_eeg_data = get_eeg_data()
+eeg_data = get_eeg_data()
 
 # 初始化图形和子图
 fig, axs = plt.subplots(4, 1, figsize=(10, 8), sharex=True)
@@ -39,7 +39,7 @@ channels_to_plot = [10, 11, 12, 13]  # 前4个通道的索引
 
 # 初始化折线图
 for idx, channel in enumerate(channels_to_plot):
-    line, = axs[idx].plot(old_eeg_data[channel])
+    line, = axs[idx].plot(eeg_data[channel])
     lines.append(line)
     axs[idx].set_ylabel(f'Channel {channel + 1}')  # 设置y轴标签
     axs[idx].set_ylim(-120, 120)
@@ -53,17 +53,10 @@ plt.suptitle('EEG Data (First 4 Channels)')
 # 更新函数，用于更新折线图
 def update(frame):
     # 获取新数据
-    global old_eeg_data, window_data
-    new_eeg_data = get_eeg_data()
-    # 滑动窗口
-    rolled_old_eeg_data = np.roll(old_eeg_data, -shift, axis=1)
-    # window_data = np.concatenate([rolled_old_eeg_data[:,:-shift],new_eeg_data[:,:shift]],axis=1)
-    window_data = np.hstack((rolled_old_eeg_data[:, :-shift], new_eeg_data[:,:shift]))
-    old_eeg_data = window_data
+    eeg_data = get_eeg_data()
     # 更新前4个通道的折线图数据
     for idx, channel in enumerate(channels_to_plot):
-        lines[idx].set_data(np.arange(125), window_data[channel])
-
+        lines[idx].set_data(np.arange(125), eeg_data[channel])
     return lines
 
 # 创建动画

@@ -4,7 +4,6 @@ import logging
 from queue import Queue
 from EEGDataDriver import EEGDataDriver
 
-eeg_driver = EEGDataDriver()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,6 +19,7 @@ class EEGSerialPortManager:
     def __init__(self):
         self.serial_port = None
         self.serial_thread = None
+        self.eeg_driver = EEGDataDriver()
 
     def open_serial_port(self):
         try:
@@ -46,8 +46,8 @@ class EEGSerialPortManager:
                 if self.serial_port.in_waiting >= EEG_DATA_PACKET_LENGTH:
                     read_buffer = self.serial_port.read(EEG_DATA_PACKET_LENGTH)
                     # self.parse_sampling(read_buffer)
-                    eeg_driver.parse_sampling(read_buffer)
-                    # q.put(eeg_driver.parse_sampling(read_buffer))
+                    self.eeg_driver.parse_sampling(read_buffer)
+                    # q.put(self.eeg_driver.parse_sampling(read_buffer))
 
                     # q.put(read_buffer)
             except Exception as e:
@@ -90,17 +90,3 @@ class EEGSerialPortManager:
             return self.serial_port.is_open
         return False
 
-
-# if __name__ == "__main__":
-#     eeg_serial_manager = EEGSerialPortManager()
-#     if eeg_serial_manager.open_serial_port():
-#         eeg_serial_manager.config_serial_port()
-#         # Example usage:
-#         eeg_serial_manager.request_data()
-#         # if eeg_serial_manager.is_serial_port_open():
-#         #     # Do something
-
-#         # else:
-#         #     # Handle serial port not open
-#     else:
-#         logger.error("Failed to open serial port")
