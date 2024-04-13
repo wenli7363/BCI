@@ -70,7 +70,7 @@ class EEGDataCollectionUI(QWidget):
         self.visual_scroll_area.setWidgetResizable(True)
         self.visual_scroll_area.setWidget(self.canvas)
         self.visual_area.addWidget(self.visual_scroll_area)
-        self.eeg_data_layout.addLayout(self.visual_area)
+        self.eeg_data_layout.addLayout(self.visual_area,stretch=8)
 
         # ============================================================================================================
 
@@ -95,7 +95,7 @@ class EEGDataCollectionUI(QWidget):
         self.channel_scroll_area.setWidget(self.channel_widget)
         self.channel_selection_layout.addWidget(self.channel_scroll_area)
 
-        self.eeg_data_layout.addLayout(self.channel_selection_layout)
+        self.eeg_data_layout.addLayout(self.channel_selection_layout,stretch=1)
 
         self.eeg_data_area.setLayout(self.eeg_data_layout)
         self.main_area_layout.addWidget(self.eeg_data_area, stretch=3)  # 设置拉伸因子为4
@@ -200,17 +200,3 @@ class EEGDataCollectionUI(QWidget):
         # 这里假设获取到的数据是随机的
         # return  -50 + (50 - (-50)) *np.random.rand(32, 125)
         return np.array(self.eeg_serial_port_manager.eeg_driver.get_eeg_data())
-    
-    # # 重写resizeEvent方法
-    # def resizeEvent(self, event):
-    #     super(EEGDataCollectionUI, self).resizeEvent(event)
-    #     self.update_canvas_size()
-
-    # # 添加一个更新canvas大小的方法
-    # def update_canvas_size(self):
-    #     # 获取当前滚动区域的大小
-    #     size = self.visual_scroll_area.size()
-    #     # 更新Figure的大小以适应滚动区域的大小
-    #     self.canvas.figure.set_size_inches(size.height() / 25.4 * self.canvas.figure.dpi, forward=False)
-    #     # 更新FigureCanvas的大小
-    #     self.canvas.updateGeometry()
