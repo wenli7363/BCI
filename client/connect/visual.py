@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import threading
-from EEGSerialPortManager import EEGSerialPortManager,SERIAL_PORT_NAME
+from connect.EEGSerialPortManager import EEGSerialPortManager,SERIAL_PORT_NAME
 from time import sleep
 
 # 创建EEG数据驱动和串口管理器实例

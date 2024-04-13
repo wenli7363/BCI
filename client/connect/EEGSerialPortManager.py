@@ -2,7 +2,7 @@ import serial
 import threading
 import logging
 from queue import Queue
-from EEGDataDriver import EEGDataDriver
+from connect.EEGDataDriver import EEGDataDriver
 
 
 logging.basicConfig(level=logging.INFO)

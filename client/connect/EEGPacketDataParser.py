@@ -1,7 +1,7 @@
-from EEGPacketDataBean import EEGPacketData
-from EEGInfoDataBean import EEGInfoDataBean
-from EEGDataTransformHelper import channelCount, dataCount, parseEEGDataNoFlag
-import ByteUtil
+from connect.EEGPacketDataBean import EEGPacketData
+from connect.EEGInfoDataBean import EEGInfoDataBean
+from connect.EEGDataTransformHelper import channelCount, dataCount, parseEEGDataNoFlag
+import connect.ByteUtil as ByteUtil
 
 
 def parse_packet(raw_data: bytes) -> EEGPacketData:

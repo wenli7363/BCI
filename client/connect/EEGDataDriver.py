@@ -2,8 +2,8 @@ import json
 import time
 import csv
 from typing import List
-import EEGDataValidJudgeHelper
-from EEGPacketDataParser import parse_packet,parse_info_data
+import connect.EEGDataValidJudgeHelper as EEGDataValidJudgeHelper
+from connect.EEGPacketDataParser import parse_packet,parse_info_data
 
 class EEGDataDriver:
     def __init__(self):

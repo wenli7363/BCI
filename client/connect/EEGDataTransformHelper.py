@@ -1,7 +1,7 @@
 import numpy as np
 from rx.subject import Subject
-from EEGDataFilterUtil import combFilter, lowPass40HzFilter
-from EEGDataBean import EEGDataBean, EEGChannelBean
+from connect.EEGDataFilterUtil import combFilter, lowPass40HzFilter
+from connect.EEGDataBean import EEGDataBean, EEGChannelBean
 
 channelCount = 32  # 通道数
 dataCount = 1  # 每个通道的数据点数量
