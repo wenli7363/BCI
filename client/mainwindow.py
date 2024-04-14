@@ -22,7 +22,7 @@ class EEGDataCollectionUI(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
-        self.data_update_timer = QTimer()
+        self.data_update_timer = QTimer()           # 获取新数据的定时器
         self.eeg_serial_port_manager = EEGSerialPortManager()
 
         self.initConnect()
@@ -49,7 +49,6 @@ class EEGDataCollectionUI(QWidget):
         self.eeg_data_visualizer = EEGDataVisualizer(channels_to_plot=channels_to_plot)
         self.eeg_data_visualizer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.eeg_data_layout.addWidget(self.eeg_data_visualizer,stretch=8)
-
 
         # ============================================================================================================
 
@@ -144,7 +143,7 @@ class EEGDataCollectionUI(QWidget):
         self.logger.log_signal.connect(lambda msg: self.log_area.append(msg))                       # 日志记录器信号连接到日志区域
         self.connect_button.clicked.connect(self.on_connect_button_clicked)                         # 串口连接按钮点击事件 
         self.disconnect_button.clicked.connect(self.on_disconnect_button_clicked)                   # 串口断开按钮点击事件
-        self.data_update_timer.timeout.connect(self.update_eeg_data)                               # 更新EEG数据
+        self.data_update_timer.timeout.connect(self.update_eeg_data)                               # 定时更新EEG数据
 
     "槽函数，用于处理串口连接按钮点击事件"
     def on_connect_button_clicked(self):        
@@ -179,8 +178,11 @@ class EEGDataCollectionUI(QWidget):
         self.eeg_collection_window.show()
 
     def update_eeg_data(self):
+        """
+        处理新数据，传递给eeg可视化对象进行折线图更新
+        """
         global old_eeg_data
-        new_eeg_data = get_eeg_data()
+        new_eeg_data = self.get_eeg_data()
         rolled_old_eeg_data = np.roll(old_eeg_data, -shift, axis=1)
         window_data = np.hstack((rolled_old_eeg_data[:, :-shift], new_eeg_data[:,:shift]))
         old_eeg_data = window_data
@@ -188,5 +190,6 @@ class EEGDataCollectionUI(QWidget):
 
 
 
-def get_eeg_data():
-    return -50 + (50 - (-50)) *np.random.rand(32, 125)
+    def get_eeg_data(self):
+        return -50 + (50 - (-50)) *np.random.rand(32, 125)
+        # return np.array(self.eeg_serial_port_manager.eeg_driver.get_eeg_data())
