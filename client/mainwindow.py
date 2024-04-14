@@ -47,6 +47,7 @@ class EEGDataCollectionUI(QWidget):
 
         
         self.eeg_data_visualizer = EEGDataVisualizer(channels_to_plot=channels_to_plot)
+        self.eeg_data_visualizer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.eeg_data_layout.addWidget(self.eeg_data_visualizer,stretch=8)
 
 
@@ -147,19 +148,20 @@ class EEGDataCollectionUI(QWidget):
 
     "槽函数，用于处理串口连接按钮点击事件"
     def on_connect_button_clicked(self):        
+        self.data_update_timer.start(100)
         # 尝试打开串口
-        if self.eeg_serial_port_manager.open_serial_port():
-            print(f"成功打开串口: {SERIAL_PORT_NAME}")
+        # if self.eeg_serial_port_manager.open_serial_port():
+        #     print(f"成功打开串口: {SERIAL_PORT_NAME}")
             
-            # 配置串口以开始监听数据
-            self.eeg_serial_port_manager.config_serial_port()
-            self.eeg_serial_port_manager.request_data()
-            print("发送命令成功")
-            selected_port = self.serial_config_combox.currentText()
-            self.logger.log("连接到设备:{}".format(selected_port))
-            self.serial_config_label.setText("设备连接状态：已连接")
-            # 启动计时器，定时读数据
-            self.data_update_timer.start(100)
+        #     # 配置串口以开始监听数据
+        #     self.eeg_serial_port_manager.config_serial_port()
+        #     self.eeg_serial_port_manager.request_data()
+        #     print("发送命令成功")
+        #     selected_port = self.serial_config_combox.currentText()
+        #     self.logger.log("连接到设备:{}".format(selected_port))
+        #     self.serial_config_label.setText("设备连接状态：已连接")
+        #     # 启动计时器，定时读数据
+        #     self.data_update_timer.start(100)
     
     def on_disconnect_button_clicked(self):
         self.logger.log("断开设备连接")

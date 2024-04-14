@@ -20,13 +20,14 @@ class EEGDataVisualizer(QWidget):
 
         # 创建 PyQtGraph 的绘图区域
         self.plot_layout = pg.GraphicsLayoutWidget()
-        self.plot_layout.setFixedHeight(1300)  # 设置固定高度
-        self.plot_layout.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.plot_layout.setFixedHeight(1600)  # 设置固定高度
+
 
         self.plot_scroll_area = QScrollArea()
         self.plot_scroll_area.setWidget(self.plot_layout)
         self.plot_scroll_area.setWidgetResizable(True)
-        self.plot_scroll_area.setFixedHeight(600)  # 设置固定高度
+        # self.plot_scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        # self.plot_scroll_area.setFixedHeight(600)  # 设置固定高度
 
         layout.addWidget(self.plot_scroll_area)
 
@@ -35,10 +36,13 @@ class EEGDataVisualizer(QWidget):
         for i in self.channels_to_plot:
             self.plot_layout.nextRow()
             plot_item = self.plot_layout.addPlot()
-            plot_item.setFixedHeight(60)  # 设置每个 PlotItem 的高度为 50
-            # plot_item.setYRange(-120, 120)
+            plot_item.setFixedHeight(80)  # 设置每个 PlotItem 的高度为 50
             plot_item.setMouseEnabled(x=False, y=False)  # 禁用鼠标交互
-            # plot_item.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            plot_item.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            # plot_item.showAxis('bottom', False)                         # 是否显示坐标轴
+            if i != self.channels_to_plot[-1]:
+                plot_item.getAxis('bottom').setStyle(showValues=False)
+            plot_item.getAxis('left').setStyle(showValues=False)        # 是否显示刻度
             self.plot_items.append(plot_item)
 
         # 初始化曲线
