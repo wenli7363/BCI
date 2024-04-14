@@ -27,17 +27,6 @@ class DataUpdateThread(threading.Thread):
             # 暂停一段时间，以便模拟数据采集
             time.sleep(0.1)
 
-    def update_data(self):
-        # 获取新数据
-        new_data = get_eeg_data()
-        # 更新图形数据
-        for idx, channel in enumerate(self.channels_to_plot):
-            # 滑动窗口更新
-            rolled_old_data = np.roll(self.lines[idx].get_ydata(), -self.shift, axis=0)
-            new_data_segment = new_data[idx][:self.shift]
-            self.lines[idx].set_data(np.arange(self.shift, len(new_data_segment) + self.shift), new_data_segment)
-            self.canvas.draw_idle()  # 重绘Canvas
-
     def update(self):
         new_eeg_data = get_eeg_data()
         rolled_old_eeg_data = np.roll(self.old_eeg_data, -self.shift, axis=1)
