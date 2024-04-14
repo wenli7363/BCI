@@ -9,8 +9,7 @@ from time import sleep
 eeg_serial_port_manager = EEGSerialPortManager()
 
 shift = 10
-window_size = 250
-window_data = np.zeros((32,window_size))
+window_data = np.zeros((32,125))
 
 # 尝试打开串口
 if eeg_serial_port_manager.open_serial_port():

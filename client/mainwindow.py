@@ -14,16 +14,24 @@ import numpy as np
 import threading
 from connect.EEGSerialPortManager import EEGSerialPortManager,SERIAL_PORT_NAME
 from time import sleep
+from UpdateThread import DataUpdateThread
+from matplotlib.animation import FuncAnimation
 
-shift = 10
-window_size = 250
+N = 10  # 通道数
+shift = 20
+old_eeg_data = np.zeros((32, 125))
+lines = []
+channels_to_plot = [i for i in range(N)]
 
 class EEGDataCollectionUI(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
-        self.initConnect()
+        
         self.eeg_serial_port_manager = EEGSerialPortManager()
+        self.data_update_thread = DataUpdateThread(self.canvas, lines, channels_to_plot, shift)
+
+        self.initConnect()
 
     def initUI(self):
         # 创建主布局
@@ -43,26 +51,24 @@ class EEGDataCollectionUI(QWidget):
         self.eeg_data_label = QLabel("EEG数据可视化区域")
         self.eeg_data_layout.addWidget(self.eeg_data_label)
 
-        N = 6
-        fig = plt.Figure(figsize=(6, N * 2))  # 6个子图，每个子图的高度是2英寸
-        axes = [fig.add_subplot(N, 1, i+1) for i in range(N)]
+        
+        self.fig, self.axes = plt.subplots(N, 1, figsize=(10, 8), sharex=True)
+        # 初始化折线图
+        for idx, channel in enumerate(channels_to_plot):
+            global lines
+            line, = self.axes[idx].plot(old_eeg_data[channel])
+            lines.append(line)
+            # self.axes[idx].set_ylabel(f'Channel {channel + 1}')  # 设置y轴标签
+            self.axes[idx].set_ylim(-120, 120)
 
-        # 准备数据和绘制折线图
-        for i, ax in enumerate(axes):  # N个子图
-            # 生成一些数据
-            x = np.linspace(0, 10, 100)
-            y = np.sin(x * (i + 1))  # 每个子图使用不同的频率
-            
-            # 绘制折线图在对应的子图上
-            ax.plot(x, y)
 
         # 调整子图布局，消除间隙
-        fig.tight_layout(h_pad=0, w_pad=0.1)  # 调整布局，使得子图之间没有水平间隙
-        fig.subplots_adjust(hspace=0, bottom=0.05, top=0.95)  # 调整布局，使得子图之间没有垂直间隙
+        self.fig.tight_layout(h_pad=0, w_pad=0.1)  # 调整布局，使得子图之间没有水平间隙
+        self.fig.subplots_adjust(hspace=0, bottom=0.05, top=0.95)  # 调整布局，使得子图之间没有垂直间隙
 
 
         # 创建一个FigureCanvas，用于在Qt中显示matplotlib图形
-        self.canvas = FigureCanvas(fig)
+        self.canvas = FigureCanvas(self.fig)
         self.canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         self.visual_area = QVBoxLayout()
@@ -157,7 +163,7 @@ class EEGDataCollectionUI(QWidget):
         """
         Toggle visibility of EEG channels based on checkbox state.
         """
-        self.curves[channel_index].setVisible(state == 2)  # 2表示选中状态
+        self.axes[channel_index].set_visible(state == 2)
 
     def initConnect(self):
         self.two_class_button.clicked.connect(self.on_2class_button_clicked)        # 二分类按钮点击事件
@@ -166,20 +172,21 @@ class EEGDataCollectionUI(QWidget):
         self.connect_button.clicked.connect(self.on_connect_button_clicked)                         # 串口连接按钮点击事件 
         self.disconnect_button.clicked.connect(self.on_disconnect_button_clicked)                   # 串口断开按钮点击事件
 
-
     "槽函数，用于处理串口连接按钮点击事件"
     def on_connect_button_clicked(self):
+        self.data_update_thread.start()
+
         # 尝试打开串口
-        if self.eeg_serial_port_manager.open_serial_port():
-            print(f"成功打开串口: {SERIAL_PORT_NAME}")
+        # if self.eeg_serial_port_manager.open_serial_port():
+        #     print(f"成功打开串口: {SERIAL_PORT_NAME}")
             
-            # 配置串口以开始监听数据
-            self.eeg_serial_port_manager.config_serial_port()
-            self.eeg_serial_port_manager.request_data()
-            print("发送命令成功")
-            selected_port = self.serial_config_combox.currentText()
-            self.logger.log("连接到设备:{}".format(selected_port))
-            self.serial_config_label.setText("设备连接状态：已连接")
+        #     # 配置串口以开始监听数据
+        #     self.eeg_serial_port_manager.config_serial_port()
+        #     self.eeg_serial_port_manager.request_data()
+        #     print("发送命令成功")
+        #     selected_port = self.serial_config_combox.currentText()
+        #     self.logger.log("连接到设备:{}".format(selected_port))
+        #     self.serial_config_label.setText("设备连接状态：已连接")
     
     def on_disconnect_button_clicked(self):
         self.logger.log("断开设备连接")
@@ -194,9 +201,3 @@ class EEGDataCollectionUI(QWidget):
         self.logger.log("开始四分类数据采集")
         self.eeg_collection_window = fourclass.FourClassUI()
         self.eeg_collection_window.show()
-
-    # 模拟获取脑电数据的函数
-    def get_eeg_data(self):
-        # 这里假设获取到的数据是随机的
-        # return  -50 + (50 - (-50)) *np.random.rand(32, 125)
-        return np.array(self.eeg_serial_port_manager.eeg_driver.get_eeg_data())
