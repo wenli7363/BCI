@@ -23,8 +23,8 @@ if eeg_serial_port_manager.open_serial_port():
 # 模拟获取脑电数据的函数
 def get_eeg_data():
     # 这里假设获取到的数据是随机的
-    return  -50 + (50 - (-50)) *np.random.rand(32, 125)
-    # return np.array(eeg_serial_port_manager.eeg_driver.get_eeg_data())
+    # return  -50 + (50 - (-50)) *np.random.rand(32, 125)
+    return np.array(eeg_serial_port_manager.eeg_driver.get_eeg_data())
 
 # 获取脑电数据
 old_eeg_data = get_eeg_data()

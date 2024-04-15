@@ -12,7 +12,7 @@ from connect.EEGSerialPortManager import EEGSerialPortManager,SERIAL_PORT_NAME
 from time import sleep
 from EEGDataVisualizer import EEGDataVisualizer
 
-N = 10  # 通道数
+N = 32  # 通道数
 shift = 20
 old_eeg_data = np.zeros((32, 125))
 lines = []
@@ -147,24 +147,28 @@ class EEGDataCollectionUI(QWidget):
 
     "槽函数，用于处理串口连接按钮点击事件"
     def on_connect_button_clicked(self):        
-        self.data_update_timer.start(100)
+        # self.data_update_timer.start(100)
+
         # 尝试打开串口
-        # if self.eeg_serial_port_manager.open_serial_port():
-        #     print(f"成功打开串口: {SERIAL_PORT_NAME}")
+        if self.eeg_serial_port_manager.open_serial_port():
+            print(f"成功打开串口: {SERIAL_PORT_NAME}")
             
-        #     # 配置串口以开始监听数据
-        #     self.eeg_serial_port_manager.config_serial_port()
-        #     self.eeg_serial_port_manager.request_data()
-        #     print("发送命令成功")
-        #     selected_port = self.serial_config_combox.currentText()
-        #     self.logger.log("连接到设备:{}".format(selected_port))
-        #     self.serial_config_label.setText("设备连接状态：已连接")
-        #     # 启动计时器，定时读数据
-        #     self.data_update_timer.start(100)
+            # 配置串口以开始监听数据
+            self.eeg_serial_port_manager.config_serial_port()
+            self.eeg_serial_port_manager.request_data()
+            print("发送命令成功")
+            selected_port = self.serial_config_combox.currentText()
+            self.logger.log("连接到设备:{}".format(selected_port))
+            self.serial_config_label.setText("设备连接状态：已连接")
+            # 启动计时器，定时读数据
+            self.data_update_timer.start(100)
     
     def on_disconnect_button_clicked(self):
         self.logger.log("断开设备连接")
         self.data_update_timer.stop()
+        self.eeg_serial_port_manager.close_serial_port()
+        self.serial_config_label.setText("设备连接状态：未连接")
+        self.eeg_data_visualizer.reset()
 
     def on_2class_button_clicked(self):
         self.logger.log("开始二分类数据采集")
@@ -188,8 +192,6 @@ class EEGDataCollectionUI(QWidget):
         old_eeg_data = window_data
         self.eeg_data_visualizer.update_eeg_data(window_data)
 
-
-
     def get_eeg_data(self):
-        return -50 + (50 - (-50)) *np.random.rand(32, 125)
-        # return np.array(self.eeg_serial_port_manager.eeg_driver.get_eeg_data())
+        # return -50 + (50 - (-50)) *np.random.rand(32, 125)
+        return np.array(self.eeg_serial_port_manager.eeg_driver.get_eeg_data())

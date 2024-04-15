@@ -1,39 +1,110 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget
-from PyQt5.QtGui import QPainter, QPen, QPainterPath, QPixmap
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget,QLineEdit,QPushButton,
+                             QTextEdit,QHBoxLayout,QFileDialog,QMessageBox)
+from PyQt5.QtGui import QPainter, QPen, QPainterPath, QPixmap, QFont
+from PyQt5.QtCore import Qt, QTimer,QRectF
 import random
 import winsound
+import numpy as np
 
 class FourClassUI(QMainWindow):
     def __init__(self):
         super().__init__()
         self.initUI()
-        self.total_trial = 0    # 总共的trials
+        self.total_trial = 0    # 已经执行的总共trials数
         self.max_trials = 12    # 每个方向最多出现12次
         self.num_trials = {'up':0,'down':0,'left':0,'right':0}      # 统计每个方向的次数
-        
+        self.eeg_data = []
+        self.triger_time = []
+        self.save_path = None
+        self.timer = QTimer()
+
+    
     def initUI(self):
-        self.setGeometry(100,100,400, 400)        # 窗口尺寸
+        # 设置窗口的标题和初始位置
+        self.setWindowTitle('四分类')
+        self.setGeometry(100, 100, 400, 400) 
         self.centerWindow()
-        self.setWindowTitle('Fixation Cross with Random Arrows')
+        # 创建一个 QWidget 作为中央部件
+        central_widget = QWidget(self)
+        self.setCentralWidget(central_widget)
+
+        # 创建 QVBoxLayout 来组织布局
+        layout = QVBoxLayout(central_widget)
+
+        """
+        提示UI
+        """
+        tip = "<div align='center'><b>说明</b></div><br />" \
+              "<div align='left'>左右运动想象数据采集，每次测试从bee声开始，有2s集中注意，4s想象，2秒休息组成，一组实验总共持续8s</div>"
+        font = QFont()
+        font.setPointSize(14)
+
+        self.tip_text = QLabel(tip, self)
+        self.tip_text.setFont(font)
+        self.tip_text.setWordWrap(True)
+        self.tip_text.setGeometry(10, 10, 380, 180)
+
+        layout.addWidget(self.tip_text)
+
+        """
+        每组试验次数输入框
+        """
+        # 创建 QLabel 和 QLineEdit 输入框
+        num_trials_input_layout = QHBoxLayout()
+        self.num_trials_label = QLabel('这组采集多少组数据?(建议每组各10次trials):', self)
+        self.num_trails_lineEdit = QLineEdit(self)
+        num_trials_input_layout.addWidget(self.num_trials_label)
+        num_trials_input_layout.addWidget(self.num_trails_lineEdit)
+        layout.addLayout(num_trials_input_layout)
+
+        
+        """
+        保存路径UI
+        """
+        # 创建一个 QLabel 用于提示用户选择文件保存路径
+        file_save_layout = QHBoxLayout()
+        self.label_file_save = QLabel('保存路径:', self)
+        file_save_layout.addWidget(self.label_file_save)
+
+        # 创建一个 QLineEdit 用于显示和编辑文件路径
+        self.line_edit_file_save = QLineEdit(self)
+        self.line_edit_file_save.setReadOnly(True)  # 设置为只读，因为路径是通过按钮选择的
+        file_save_layout.addWidget(self.line_edit_file_save)
+
+        # 创建一个 QPushButton 用于打开文件选择对话框
+        self.button_file_save = QPushButton('浏览...', self)
+        self.button_file_save.clicked.connect(self.selectSavePath)  # 连接按钮点击事件到 selectSavePath 方法
+        file_save_layout.addWidget(self.button_file_save)
+
+        # 将新的文件保存布局添加到主布局中
+        layout.addLayout(file_save_layout)
+        
+        """
+        按钮 
+        """
+        # 创建一个按钮
+        self.button = QPushButton('开始采集', self)
+        layout.addWidget(self.button)
+
+        self.button.clicked.connect(self.startTrial)
+
+    def showBreakUI(self):
+        self.setGeometry(100, 100, 400, 400)        # 窗口尺寸
+        self.centerWindow()
+        self.setWindowTitle('休息时间')
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.layout = QVBoxLayout(self.central_widget)
         
-        self.label = QLabel(self)
+        # 添加 "休息时间" 文字
+        self.label = QLabel("休息时间", self)
         self.label.setAlignment(Qt.AlignCenter)
+        self.label.setFont(QFont("Arial", 24))
         self.layout.addWidget(self.label)
-        
-        # Timer setup
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.showRandomArrow)    # 每次定时器超时，显示一个随机方向的箭头
-        self.timer.start(3000)  # 8 seconds interval
-        
-        self.showFixationCross()
-        
+
     def showFixationCross(self):
-        pixmap = QPixmap(400, 400)
+        pixmap = QPixmap(self.label.width(), self.label.height())
         pixmap.fill(Qt.white)
         painter = QPainter(pixmap)
         pen = QPen(Qt.black, 5)
@@ -47,6 +118,7 @@ class FourClassUI(QMainWindow):
         painter.end()
         
         self.label.setPixmap(pixmap)
+        winsound.Beep(500,500)
         
     def drawArrow(self, painter, direction):
         # 在标题中显示这是第几组实验
@@ -80,7 +152,7 @@ class FourClassUI(QMainWindow):
         painter.drawPath(arrow_path)
         
     def showRandomArrow(self):
-        pixmap = QPixmap(400, 400)
+        pixmap = QPixmap(self.label.width(), self.label.height())
         pixmap.fill(Qt.white)
         painter = QPainter(pixmap)
         pen = QPen(Qt.black, 5)
@@ -112,6 +184,7 @@ class FourClassUI(QMainWindow):
         
         self.label.setPixmap(pixmap)
     
+    # 将窗口放到显示器中间
     def centerWindow(self):
         # 获取显示器的可用空间
         screen = QApplication.primaryScreen()
@@ -128,3 +201,75 @@ class FourClassUI(QMainWindow):
         
         # 设置窗口位置
         self.setGeometry(center_x, center_y, window_width, window_height)
+
+    # 采集脑电信号
+    def collectEEGData(self):
+        pass
+        # eeg_sample = self.eeg_device.read_samples(1)  # 读取1个EEG采样点
+        # self.eeg_data.append(eeg_sample)
+
+    def saveData(self):
+        # 保存EEG数据和实验阶段时间戳
+        np.save('eeg_data.npy', np.array(self.eeg_data))
+        np.save('trigger_times.npy', np.array(self.trigger_times))
+
+    def runExperiment(self):
+        if(self.total_trial == self.max_trials * 4):
+            # self.saveData()
+            task_end_msg = QMessageBox()
+            task_end_msg.setText("实验结束,可以关闭当前窗口了")
+            task_end_msg.setWindowTitle("提示")
+            task_end_msg.setIcon(QMessageBox.Information)
+            task_end_msg.exec_()
+            return
+        self.showBreakUI()
+        self.timer.singleShot(3000, self.showFixationCross)
+        self.timer.singleShot(5000, self.showRandomArrow)
+        self.timer.singleShot(6000, self.showMotorImagery)
+        self.timer.singleShot(9000, self.runExperiment)  # 循环进行实验
+    
+    def selectSavePath(self):
+        # 这里可以使用 QFileDialog 来打开文件选择对话框
+        save_path = QFileDialog.getExistingDirectory(self, "选择保存路径", "~")  # "~" 代表用户的主目录
+        if save_path:
+            self.line_edit_file_save.setText(save_path)  # 将选择的路径显示在 QLineEdit 中
+
+    # 开始实验
+    def startTrial(self):
+        # 如果没有保存文件路径，弹出消息窗提示用户选择路径
+        if self.line_edit_file_save.text()=="":
+            msg_box = QMessageBox()
+            msg_box.setText("请先选择保存路径！！")
+            msg_box.setWindowTitle("提示")
+            msg_box.setIcon(QMessageBox.Information)
+            msg_box.exec_()
+            return
+        if self.num_trails_lineEdit.text() != "":
+            self.max_trials = int(self.num_trails_lineEdit.text())
+        else: 
+            self.max_trials = 12
+        self.save_path = self.line_edit_file_save.text()
+        
+        self.runExperiment()
+    
+    def showMotorImagery(self):
+        pixmap = QPixmap(self.label.width(), self.label.height())
+        pixmap.fill(Qt.white)
+        painter = QPainter(pixmap)
+        pen = QPen(Qt.black, 5)
+        painter.setPen(pen)
+        
+        # Draw the text "开始想象"
+        font = QFont("Arial", 24)
+        painter.setFont(font)
+        painter.drawText(QRectF(0, 0, 400, 400), Qt.AlignCenter, "想象中...")
+        
+        painter.end()
+        
+        self.label.setPixmap(pixmap)
+    
+    def closeEvent(self, event):
+        # 在这里停止定时器并执行其他清理任务
+        self.timer.stop()
+        # 执行其他清理任务...
+        event.accept()

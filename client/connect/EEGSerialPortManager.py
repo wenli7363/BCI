@@ -20,6 +20,7 @@ class EEGSerialPortManager:
         self.serial_port = None
         self.serial_thread = None
         self.eeg_driver = EEGDataDriver()
+        self.thread_running = False
 
     def open_serial_port(self):
         try:
@@ -33,6 +34,7 @@ class EEGSerialPortManager:
 
     def config_serial_port(self):
         if self.serial_port is not None and self.serial_port.is_open:
+            self.thread_running = True
             self.serial_thread = threading.Thread(target=self.serial_listener,args=(message_queue,))
             self.serial_thread.daemon = True
             self.serial_thread.start()
@@ -41,7 +43,7 @@ class EEGSerialPortManager:
             logger.error("Serial port is not open, cannot configure")
 
     def serial_listener(self,q):
-        while self.is_serial_port_open():
+        while self.is_serial_port_open() and self.thread_running:
             try:
                 if self.serial_port.in_waiting >= EEG_DATA_PACKET_LENGTH:
                     read_buffer = self.serial_port.read(EEG_DATA_PACKET_LENGTH)
@@ -61,7 +63,10 @@ class EEGSerialPortManager:
         logger.info(f"Parsing EEG data: {data}")
 
     def close_serial_port(self):
-        if self.serial_port     is not None and self.serial_port.is_open:
+        if self.serial_port is not None and self.serial_port.is_open:
+            self.thread_running = False
+            if self.serial_thread is not None:
+                self.serial_thread.join()
             self.serial_port.close()
             logger.info("Serial port closed")
         else:

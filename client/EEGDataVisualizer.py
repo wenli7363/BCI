@@ -20,7 +20,7 @@ class EEGDataVisualizer(QWidget):
 
         # 创建 PyQtGraph 的绘图区域
         self.plot_layout = pg.GraphicsLayoutWidget()
-        self.plot_layout.setFixedHeight(1600)  # 设置固定高度
+        self.plot_layout.setFixedHeight(3000)  # 设置固定高度
 
 
         self.plot_scroll_area = QScrollArea()
@@ -62,3 +62,6 @@ class EEGDataVisualizer(QWidget):
         for i, channel in enumerate(self.channels_to_plot):
             self.plots[i].setData(np.arange(125), eeg_data[channel])
         self.plot_layout.update()
+    
+    def reset(self):
+        self.update_eeg_data(np.zeros((32, 125)))

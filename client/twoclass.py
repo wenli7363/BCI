@@ -8,8 +8,8 @@ import winsound
 class TwoClassUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        # self.initUI()
-        self.startCollect()
+        self.initUI()
+        # self.startCollect()
         self.total_trial = 0
         self.max_trials = 12
         self.num_trials = {'left':0,'right':0}
