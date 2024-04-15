@@ -12,9 +12,11 @@ from connect.EEGSerialPortManager import EEGSerialPortManager,SERIAL_PORT_NAME
 from time import sleep
 from EEGDataVisualizer import EEGDataVisualizer
 
+DOWNSAMPLE_SIZE = 250
+
 N = 32  # 通道数
 shift = 20
-old_eeg_data = np.zeros((32, 125))
+old_eeg_data = np.zeros((32, DOWNSAMPLE_SIZE))
 lines = []
 channels_to_plot = [i for i in range(N)]
 
@@ -62,7 +64,7 @@ class EEGDataCollectionUI(QWidget):
         self.channel_widget = QWidget()
         self.channel_layout = QHBoxLayout()
 
-        for i in range(32):
+        for i in range(N):
             checkbox = QCheckBox(f"ch{i+1}")
             checkbox.setChecked(True)  # 默认全部选中
             checkbox.stateChanged.connect(lambda state, idx=i: self.toggle_channel_visibility(idx, state))
@@ -193,5 +195,5 @@ class EEGDataCollectionUI(QWidget):
         self.eeg_data_visualizer.update_eeg_data(window_data)
 
     def get_eeg_data(self):
-        # return -50 + (50 - (-50)) *np.random.rand(32, 125)
+        # return -50 + (50 - (-50)) *np.random.rand(32, DOWNSAMPLE_SIZE)
         return np.array(self.eeg_serial_port_manager.eeg_driver.get_eeg_data())

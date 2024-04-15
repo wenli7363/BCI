@@ -4,11 +4,12 @@ import csv
 from typing import List
 import connect.EEGDataValidJudgeHelper as EEGDataValidJudgeHelper
 from connect.EEGPacketDataParser import parse_packet,parse_info_data
+import pdb
 
 class EEGDataDriver:
     def __init__(self):
-        self.SIGNAL_SIZE = 1000
-        self.DOWNSAMPLE_SIZE = 125
+        self.SIGNAL_SIZE = 2000  # SINGNAL_SIZE = 
+        self.DOWNSAMPLE_SIZE = 250
         self.maxDataChannel = 32
         self.dataChannel = 32
         self.is50HzComb = True
@@ -33,13 +34,11 @@ class EEGDataDriver:
                         self.eegData[i][self.dataIndex] = eeg_channel.eeg_value[i]
                     self.dataIndex += 1
                     if self.dataIndex == self.SIGNAL_SIZE:
-                        for i in range(self.DOWNSAMPLE_SIZE):
+                        for i in range(125):
                             for j in range(self.dataChannel):
-                                self.eegDataBuffer[j][i] = self.eegData[j][i * 8]       # eegDataBuffer[j][i]为数据处理完得到的脑电数据
-                        self.timestamp = int(time.time() * 1000)
+                                self.eegDataBuffer[j][i] = self.eegData[j][i * 8]       # eegDataBuffer[j][i]为数据处理完得到的脑电数据,从eegData里面抽样的，
+                        self.timestamp = int(time.time() * 1000)                        # 这里是每隔8个数据抽样一次
                         self.dataIndex = 0
-                        # main_server = SpringBeanUtil.get_bean(MainServer)
-                        # main_server.mental_model_inference()
             except Exception as e:
                 # logger.error("EEG parse error: " + str(e))
                 print("EEG parse error: " + str(e))

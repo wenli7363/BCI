@@ -5,9 +5,11 @@ from matplotlib.animation import FuncAnimation
 import time
 import threading
 
+DOWNSAMPLE_SIZE = 250
+
 def get_eeg_data():
-    return -50 + (50 - (-50)) *np.random.rand(32, 125)
-    # return np.random.rand(32,125)
+    return -50 + (50 - (-50)) *np.random.rand(32, DOWNSAMPLE_SIZE)
+    # return np.random.rand(32,DOWNSAMPLE_SIZE)
 
 class DataUpdateThread(threading.Thread):
     def __init__(self, canvas, lines, channels_to_plot, shift):

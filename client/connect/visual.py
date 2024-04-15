@@ -5,11 +5,13 @@ import threading
 from connect.EEGSerialPortManager import EEGSerialPortManager,SERIAL_PORT_NAME
 from time import sleep
 
+DOWNSAMPLE_SIZE = 250
+
 # 创建EEG数据驱动和串口管理器实例
 eeg_serial_port_manager = EEGSerialPortManager()
 
 shift = 10
-window_data = np.zeros((32,125))
+window_data = np.zeros((32,DOWNSAMPLE_SIZE))
 
 # 尝试打开串口
 if eeg_serial_port_manager.open_serial_port():
@@ -23,7 +25,7 @@ if eeg_serial_port_manager.open_serial_port():
 # 模拟获取脑电数据的函数
 def get_eeg_data():
     # 这里假设获取到的数据是随机的
-    # return  -50 + (50 - (-50)) *np.random.rand(32, 125)
+    # return  -50 + (50 - (-50)) *np.random.rand(32, DOWNSAMPLE_SIZE)
     return np.array(eeg_serial_port_manager.eeg_driver.get_eeg_data())
 
 # 获取脑电数据
@@ -61,7 +63,7 @@ def update(frame):
     old_eeg_data = window_data
     # 更新前4个通道的折线图数据
     for idx, channel in enumerate(channels_to_plot):
-        lines[idx].set_data(np.arange(125), window_data[channel])
+        lines[idx].set_data(np.arange(DOWNSAMPLE_SIZE), window_data[channel])
 
     return lines
 
