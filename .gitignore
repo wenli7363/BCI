@@ -24,3 +24,6 @@ Desktop.ini
 venv/
 env/
 
+/client/test.py
+/client/connect/chuankou.py
+/client/connect/test.py
