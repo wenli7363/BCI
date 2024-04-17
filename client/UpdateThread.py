@@ -4,8 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import time
 import threading
-
-DOWNSAMPLE_SIZE = 250
+from constVar import DOWNSAMPLE_SIZE
 
 def get_eeg_data():
     return -50 + (50 - (-50)) *np.random.rand(32, DOWNSAMPLE_SIZE)
@@ -19,8 +18,8 @@ class DataUpdateThread(threading.Thread):
         self.channels_to_plot = channels_to_plot
         self.shift = shift
         self.daemon = True  # 设置为守护线程，当主线程结束时，线程也会结束
-        self.old_eeg_data = np.zeros((32, 125))
-        self.window_data = np.zeros((32, 125))
+        self.old_eeg_data = np.zeros((32, DOWNSAMPLE_SIZE))
+        self.window_data = np.zeros((32, DOWNSAMPLE_SIZE))
 
     def run(self):
         while True:
@@ -35,5 +34,5 @@ class DataUpdateThread(threading.Thread):
         window_data = np.hstack((rolled_old_eeg_data[:, :-self.shift], new_eeg_data[:,:self.shift]))
         self.old_eeg_data = window_data
         for idx, channel in enumerate(self.channels_to_plot):
-            self.lines[idx].set_data(np.arange(125), window_data[channel])
+            self.lines[idx].set_data(np.arange(DOWNSAMPLE_SIZE), window_data[channel])
             self.canvas.draw_idle() 

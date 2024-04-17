@@ -11,23 +11,26 @@ import numpy as np
 from connect.EEGSerialPortManager import EEGSerialPortManager,SERIAL_PORT_NAME
 from time import sleep
 from EEGDataVisualizer import EEGDataVisualizer
+from constVar import DOWNSAMPLE_SIZE,CHANEL_NUM
+from SaveData import saveData
+import time
 
-DOWNSAMPLE_SIZE = 250
-
-N = 32  # 通道数
 shift = 20
-old_eeg_data = np.zeros((32, DOWNSAMPLE_SIZE))
+old_eeg_data = np.zeros((CHANEL_NUM, DOWNSAMPLE_SIZE))
 lines = []
-channels_to_plot = [i for i in range(N)]
+channels_to_plot = [i for i in range(CHANEL_NUM)]
+eeg_data_per_trial_buffer = []      # 用于存储每次采集的数据
 
 class EEGDataCollectionUI(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
         self.data_update_timer = QTimer()           # 获取新数据的定时器
+        self.data_saver_timer = QTimer()            # 保存数据的定时器
         self.eeg_serial_port_manager = EEGSerialPortManager()
 
         self.initConnect()
+        self.writeBufferNum = 0
 
     def initUI(self):
         # 创建主布局
@@ -64,7 +67,7 @@ class EEGDataCollectionUI(QWidget):
         self.channel_widget = QWidget()
         self.channel_layout = QHBoxLayout()
 
-        for i in range(N):
+        for i in range(CHANEL_NUM):
             checkbox = QCheckBox(f"ch{i+1}")
             checkbox.setChecked(True)  # 默认全部选中
             checkbox.stateChanged.connect(lambda state, idx=i: self.toggle_channel_visibility(idx, state))
@@ -146,6 +149,7 @@ class EEGDataCollectionUI(QWidget):
         self.connect_button.clicked.connect(self.on_connect_button_clicked)                         # 串口连接按钮点击事件 
         self.disconnect_button.clicked.connect(self.on_disconnect_button_clicked)                   # 串口断开按钮点击事件
         self.data_update_timer.timeout.connect(self.update_eeg_data)                               # 定时更新EEG数据
+        self.data_saver_timer.timeout.connect(self.eegdata_buffer_add)
 
     "槽函数，用于处理串口连接按钮点击事件"
     def on_connect_button_clicked(self):        
@@ -163,7 +167,7 @@ class EEGDataCollectionUI(QWidget):
             self.logger.log("连接到设备:{}".format(selected_port))
             self.serial_config_label.setText("设备连接状态：已连接")
             # 启动计时器，定时读数据
-            self.data_update_timer.start(100)
+        self.data_update_timer.start(100)
     
     def on_disconnect_button_clicked(self):
         self.logger.log("断开设备连接")
@@ -175,12 +179,16 @@ class EEGDataCollectionUI(QWidget):
     def on_2class_button_clicked(self):
         self.logger.log("开始二分类数据采集")
         self.eeg_collection_window = twoclass.TwoClassUI()
+        # self.eeg_collection_window.start_save_eeg_data_signal.connect(self.start_save_timer)
+        # self.eeg_collection_window.stop_save_eeg_data_signal.connect(self.stop_save_timer)
         self.eeg_collection_window.show()
 
     
     def on_4class_button_clicked(self):
         self.logger.log("开始四分类数据采集")
         self.eeg_collection_window = fourclass.FourClassUI()
+        self.eeg_collection_window.start_save_eeg_data_signal.connect(self.start_save_timer)
+        self.eeg_collection_window.stop_save_eeg_data_signal.connect(self.stop_save_timer)
         self.eeg_collection_window.show()
 
     def update_eeg_data(self):
@@ -195,5 +203,36 @@ class EEGDataCollectionUI(QWidget):
         self.eeg_data_visualizer.update_eeg_data(window_data)
 
     def get_eeg_data(self):
-        # return -50 + (50 - (-50)) *np.random.rand(32, DOWNSAMPLE_SIZE)
-        return np.array(self.eeg_serial_port_manager.eeg_driver.get_eeg_data())
+        return -50 + (50 - (-50)) *np.random.rand(CHANEL_NUM, DOWNSAMPLE_SIZE)
+        # return np.array(self.eeg_serial_port_manager.eeg_driver.get_eeg_data())
+
+    def start_save_timer(self):
+        # print("主窗口：启动保存数据定时器:",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        self.writeBufferNum = 0
+        if not self.data_saver_timer.isActive():
+            self.data_saver_timer.start(1000)    # 每隔100ms读一次数据
+            
+    
+    # 向buffer列表中添加数据
+    def eegdata_buffer_add(self):
+        global eeg_data_per_trial_buffer
+        self.writeBufferNum += 1
+
+        eeg_data_per_trial_buffer.append(self.get_eeg_data())
+
+    def stop_save_timer(self,stop_advance,flag,save_path):
+        global eeg_data_per_trial_buffer
+
+        if self.data_saver_timer.isActive():
+           self.data_saver_timer.stop()
+
+        buffer_concatenate = np.concatenate(eeg_data_per_trial_buffer,axis=1)   # 将buffer中的数据拼接起来
+        eeg_data_per_trial_buffer = []
+        # 处理buffer并保存
+        print("主窗口：收到停止保存数据信号：",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        print("主窗口：停止保存数据定时器，本次的label为：",flag)
+        print("主窗口：本轮写了{}次数据".format(self.writeBufferNum))
+        
+        # 如果不是提前停止采集，就保存数据
+        if stop_advance == False:
+            saveData(buffer_concatenate,flag,save_path,"data.h5")

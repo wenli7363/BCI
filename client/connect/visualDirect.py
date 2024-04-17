@@ -4,8 +4,8 @@ from matplotlib.animation import FuncAnimation
 import threading
 from EEGSerialPortManager import EEGSerialPortManager,SERIAL_PORT_NAME
 from time import sleep
+from constVar import DOWNSAMPLE_SIZE
 
-DOWNSAMPLE_SIZE =250
 # 创建EEG数据驱动和串口管理器实例
 eeg_serial_port_manager = EEGSerialPortManager()
 # eeg_driver = EEGDataDriver()

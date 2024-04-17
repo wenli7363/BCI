@@ -2,24 +2,38 @@ import sys
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget,QLineEdit,QPushButton,
                              QTextEdit,QHBoxLayout,QFileDialog,QMessageBox)
 from PyQt5.QtGui import QPainter, QPen, QPainterPath, QPixmap, QFont
-from PyQt5.QtCore import Qt, QTimer,QRectF
+from PyQt5.QtCore import Qt, QTimer,QRectF,pyqtSignal
 import random
 import winsound
 import numpy as np
+from SaveData import saveData
+from constVar import LABEL_MAP
+import time
+
 
 class FourClassUI(QMainWindow):
+    start_save_eeg_data_signal = pyqtSignal()
+    stop_save_eeg_data_signal = pyqtSignal(bool,int,str)  # 是否提前停止，本次实验的标签，保存路径
+
+
     def __init__(self):
         super().__init__()
         self.initUI()
         self.total_trial = 0    # 已经执行的总共trials数
-        self.max_trials = 12    # 每个方向最多出现12次
+        self.max_trials = 1   # 每个方向最多出现12次
         self.num_trials = {'up':0,'down':0,'left':0,'right':0}      # 统计每个方向的次数
-        self.eeg_data = []
-        self.triger_time = []
         self.save_path = None
-        self.timer = QTimer()
-
+        self.timer = QTimer()      # 控制实验流程的定时器
+        self.flag = None            # 标记本次实验的方向
+        self.stop_advance = False   # 是否提前停止实验
     
+    def __del__(self):
+        print("删除四分类的窗口")
+        self.timer.stop()
+        self.stopCollect()
+        self.timer.deleteLater()
+        self.deleteLater()
+
     def initUI(self):
         # 设置窗口的标题和初始位置
         self.setWindowTitle('四分类')
@@ -90,8 +104,15 @@ class FourClassUI(QMainWindow):
         self.button.clicked.connect(self.startTrial)
 
     def showBreakUI(self):
+        print("=====================================")
+        print("[breakUI]:",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        if self.stop_advance == True:
+            self.stopCollect()
+            print("提前结束")
+
+        self.timer.singleShot(3000, self.showFixationCross)
+        
         self.setGeometry(100, 100, 400, 400)        # 窗口尺寸
-        self.centerWindow()
         self.setWindowTitle('休息时间')
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -104,6 +125,13 @@ class FourClassUI(QMainWindow):
         self.layout.addWidget(self.label)
 
     def showFixationCross(self):
+        print("[showFixationCross]:",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        if self.stop_advance == True:
+            self.stopCollect()
+            print("提前结束")
+
+        self.timer.singleShot(2000, self.showRandomArrow)
+
         pixmap = QPixmap(self.label.width(), self.label.height())
         pixmap.fill(Qt.white)
         painter = QPainter(pixmap)
@@ -119,6 +147,7 @@ class FourClassUI(QMainWindow):
         
         self.label.setPixmap(pixmap)
         winsound.Beep(500,500)
+
         
     def drawArrow(self, painter, direction):
         # 在标题中显示这是第几组实验
@@ -152,6 +181,16 @@ class FourClassUI(QMainWindow):
         painter.drawPath(arrow_path)
         
     def showRandomArrow(self):
+        print("[cue]:",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        if self.stop_advance == True:
+            self.stopCollect()
+            print("提前结束")
+
+        # cue阶段读数据
+        self.startCollect()
+        # 1秒后显示想象
+        self.timer.singleShot(1000, self.showMotorImagery)
+
         pixmap = QPixmap(self.label.width(), self.label.height())
         pixmap.fill(Qt.white)
         painter = QPainter(pixmap)
@@ -175,14 +214,16 @@ class FourClassUI(QMainWindow):
                 print("已经采集了{}次trails".format(self.total_trial))
                 return
             direction = random.choice(directions)
-            
+        
+        self.flag = LABEL_MAP[direction]       # 标记一下本次实验的方向
         self.num_trials[direction] +=1
-        self.total_trial += 1
+        
         # Draw the arrow
         self.drawArrow(painter, direction)
         painter.end()
         
         self.label.setPixmap(pixmap)
+        
     
     # 将窗口放到显示器中间
     def centerWindow(self):
@@ -202,31 +243,18 @@ class FourClassUI(QMainWindow):
         # 设置窗口位置
         self.setGeometry(center_x, center_y, window_width, window_height)
 
-    # 采集脑电信号
-    def collectEEGData(self):
-        pass
-        # eeg_sample = self.eeg_device.read_samples(1)  # 读取1个EEG采样点
-        # self.eeg_data.append(eeg_sample)
-
-    def saveData(self):
-        # 保存EEG数据和实验阶段时间戳
-        np.save('eeg_data.npy', np.array(self.eeg_data))
-        np.save('trigger_times.npy', np.array(self.trigger_times))
-
     def runExperiment(self):
-        if(self.total_trial == self.max_trials * 4):
-            # self.saveData()
-            task_end_msg = QMessageBox()
-            task_end_msg.setText("实验结束,可以关闭当前窗口了")
-            task_end_msg.setWindowTitle("提示")
-            task_end_msg.setIcon(QMessageBox.Information)
-            task_end_msg.exec_()
+        if(self.total_trial != 0) : self.stopCollect()
+        if self.stop_advance == True:
+            self.stopCollect()
+            print("提前结束")
+            return
+        if self.total_trial >= self.max_trials * 4:
+            self.allTrialsEnd(True)
             return
         self.showBreakUI()
-        self.timer.singleShot(3000, self.showFixationCross)
-        self.timer.singleShot(5000, self.showRandomArrow)
-        self.timer.singleShot(6000, self.showMotorImagery)
-        self.timer.singleShot(9000, self.runExperiment)  # 循环进行实验
+        
+
     
     def selectSavePath(self):
         # 这里可以使用 QFileDialog 来打开文件选择对话框
@@ -236,14 +264,16 @@ class FourClassUI(QMainWindow):
 
     # 开始实验
     def startTrial(self):
+        # self.start_save_eeg_data_signal.emit()
         # 如果没有保存文件路径，弹出消息窗提示用户选择路径
-        if self.line_edit_file_save.text()=="":
-            msg_box = QMessageBox()
-            msg_box.setText("请先选择保存路径！！")
-            msg_box.setWindowTitle("提示")
-            msg_box.setIcon(QMessageBox.Information)
-            msg_box.exec_()
-            return
+        # if self.line_edit_file_save.text()=="":
+        #     msg_box = QMessageBox()
+        #     msg_box.setText("请先选择保存路径！！")
+        #     msg_box.setWindowTitle("提示")
+        #     msg_box.setIcon(QMessageBox.Information)
+        #     msg_box.exec_()
+        #     return
+
         if self.num_trails_lineEdit.text() != "":
             self.max_trials = int(self.num_trails_lineEdit.text())
         else: 
@@ -253,6 +283,13 @@ class FourClassUI(QMainWindow):
         self.runExperiment()
     
     def showMotorImagery(self):
+        print("[showMotorImagery]:",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        if self.stop_advance == True:
+            self.stopCollect()
+            print("提前结束")
+
+        self.timer.singleShot(4000, self.runExperiment)
+
         pixmap = QPixmap(self.label.width(), self.label.height())
         pixmap.fill(Qt.white)
         painter = QPainter(pixmap)
@@ -267,9 +304,46 @@ class FourClassUI(QMainWindow):
         painter.end()
         
         self.label.setPixmap(pixmap)
+
+        # 进行下一组实验
+        
+        self.total_trial += 1
+        
+
     
+    # 关闭窗口时，停止定时器
     def closeEvent(self, event):
         # 在这里停止定时器并执行其他清理任务
+        print("关闭四分类的窗口")
+        if self.total_trial >= self.max_trials * 4:
+            self.stop_advance = False
+        else:
+            self.stop_advance = True
         self.timer.stop()
+        
+        # self.stopCollect()
         # 执行其他清理任务...
         event.accept()
+
+    # 开始采集
+    def startCollect(self):
+        print("子窗口：发送一次开始start_save_eeg_data_signal")
+        self.start_save_eeg_data_signal.emit()
+    
+    # 停止采集
+    def stopCollect(self):
+        print("子窗口：发送一次停止stop_save_eeg_data_signal")
+        self.stop_save_eeg_data_signal.emit(self.stop_advance,self.flag,self.save_path)     # 发送本次实验的标签
+    
+ 
+    def allTrialsEnd(self,flag):
+        task_end_msg = QMessageBox()
+        task_end_msg.buttonClicked.connect(lambda: self.close())
+        if flag:
+            task_end_msg.setText("实验成功结束,可以关闭当前窗口了")
+        else:
+            task_end_msg.setText("实验提前结束,出错,数据不保存")
+        task_end_msg.setWindowTitle("提示")
+        task_end_msg.setIcon(QMessageBox.Information)
+        task_end_msg.exec_()
+        return

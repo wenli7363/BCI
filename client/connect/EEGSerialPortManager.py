@@ -57,10 +57,6 @@ class EEGSerialPortManager:
                 if not self.is_serial_port_open():
                     self.open_serial_port()
 
-    @staticmethod
-    def parse_sampling(data):
-        # Placeholder for parsing EEG data
-        logger.info(f"Parsing EEG data: {data}")
 
     def close_serial_port(self):
         if self.serial_port is not None and self.serial_port.is_open:
