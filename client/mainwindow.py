@@ -28,9 +28,10 @@ class EEGDataCollectionUI(QWidget):
         self.data_update_timer = QTimer()           # 获取新数据的定时器
         self.data_saver_timer = QTimer()            # 保存数据的定时器
         self.eeg_serial_port_manager = EEGSerialPortManager()
+        self.writeBufferNum = 0
 
         self.initConnect()
-        self.writeBufferNum = 0
+        
 
     def initUI(self):
         # 创建主布局
@@ -179,8 +180,9 @@ class EEGDataCollectionUI(QWidget):
     def on_2class_button_clicked(self):
         self.logger.log("开始二分类数据采集")
         self.eeg_collection_window = twoclass.TwoClassUI()
-        # self.eeg_collection_window.start_save_eeg_data_signal.connect(self.start_save_timer)
-        # self.eeg_collection_window.stop_save_eeg_data_signal.connect(self.stop_save_timer)
+        self.eeg_collection_window.start_save_eeg_data_signal.connect(self.start_save_timer)
+        self.eeg_collection_window.stop_save_eeg_data_signal.connect(self.stop_save_timer)
+        self.eeg_collection_window.collect_finished_signal.connect(lambda path : self.logger.log("完成二分类数据采集，保存到："+path))
         self.eeg_collection_window.show()
 
     
@@ -189,6 +191,7 @@ class EEGDataCollectionUI(QWidget):
         self.eeg_collection_window = fourclass.FourClassUI()
         self.eeg_collection_window.start_save_eeg_data_signal.connect(self.start_save_timer)
         self.eeg_collection_window.stop_save_eeg_data_signal.connect(self.stop_save_timer)
+        self.eeg_collection_window.collect_finished_signal.connect(lambda path : self.logger.log("完成四分类数据采集，保存到："+path))
         self.eeg_collection_window.show()
 
     def update_eeg_data(self):
@@ -218,11 +221,12 @@ class EEGDataCollectionUI(QWidget):
         global eeg_data_per_trial_buffer
         self.writeBufferNum += 1
 
-        eeg_data_per_trial_buffer.append(self.get_eeg_data())
+        # 根据实验的设置，保证只有4s的数据，不然可能因为时钟的不同步问题，出现5s数据
+        if (self.writeBufferNum <= 4):
+            eeg_data_per_trial_buffer.append(self.get_eeg_data())
 
     def stop_save_timer(self,stop_advance,flag,save_path):
         global eeg_data_per_trial_buffer
-
         if self.data_saver_timer.isActive():
            self.data_saver_timer.stop()
 
@@ -235,4 +239,6 @@ class EEGDataCollectionUI(QWidget):
         
         # 如果不是提前停止采集，就保存数据
         if stop_advance == False:
-            saveData(buffer_concatenate,flag,save_path,"data.h5")
+            saveData(buffer_concatenate,flag,save_path,"data")
+        else:
+            print("提前停止采集，不保存数据")

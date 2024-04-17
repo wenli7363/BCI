@@ -79,8 +79,6 @@ class EEGDataVisualizer(QWidget):
 
             self.plot_layout.update()
         except Exception as e:
-            # import pdb
-            # pdb.set_trace()
             raise e 
     
     def reset(self):

@@ -1,8 +1,8 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget,QLineEdit,QPushButton,
-                             QTextEdit,QHBoxLayout,QFileDialog,QMessageBox)
+                            QHBoxLayout,QFileDialog,QMessageBox)
 from PyQt5.QtGui import QPainter, QPen, QPainterPath, QPixmap, QFont
-from PyQt5.QtCore import Qt, QTimer,QRectF,pyqtSignal
+from PyQt5.QtCore import Qt, QTimer,QRectF,pyqtSignal,QEvent
 import random
 import winsound
 import numpy as np
@@ -14,7 +14,7 @@ import time
 class FourClassUI(QMainWindow):
     start_save_eeg_data_signal = pyqtSignal()
     stop_save_eeg_data_signal = pyqtSignal(bool,int,str)  # 是否提前停止，本次实验的标签，保存路径
-
+    collect_finished_signal = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
@@ -26,6 +26,7 @@ class FourClassUI(QMainWindow):
         self.timer = QTimer()      # 控制实验流程的定时器
         self.flag = None            # 标记本次实验的方向
         self.stop_advance = False   # 是否提前停止实验
+        self.window_geometry = self.geometry()
     
     def __del__(self):
         print("删除四分类的窗口")
@@ -50,7 +51,7 @@ class FourClassUI(QMainWindow):
         提示UI
         """
         tip = "<div align='center'><b>说明</b></div><br />" \
-              "<div align='left'>左右运动想象数据采集，每次测试从bee声开始，有2s集中注意，4s想象，2秒休息组成，一组实验总共持续8s</div>"
+              "<div align='left'>上下左右运动想象数据采集，每次测试从bee声开始，有2s集中注意，4s想象，2秒休息组成，一组实验总共持续8s</div>"
         font = QFont()
         font.setPointSize(14)
 
@@ -102,6 +103,8 @@ class FourClassUI(QMainWindow):
         layout.addWidget(self.button)
 
         self.button.clicked.connect(self.startTrial)
+        # 窗口拖动的事件过滤
+        self.installEventFilter(self)
 
     def showBreakUI(self):
         print("=====================================")
@@ -112,8 +115,9 @@ class FourClassUI(QMainWindow):
 
         self.timer.singleShot(3000, self.showFixationCross)
         
-        self.setGeometry(100, 100, 400, 400)        # 窗口尺寸
-        self.setWindowTitle('休息时间')
+        # self.setGeometry(100, 100, 400, 400)        # 窗口尺寸
+        self.setGeometry(self.window_geometry)
+        # self.setWindowTitle('休息时间')
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.layout = QVBoxLayout(self.central_widget)
@@ -151,7 +155,7 @@ class FourClassUI(QMainWindow):
         
     def drawArrow(self, painter, direction):
         # 在标题中显示这是第几组实验
-        self.setWindowTitle('Trial {}/{}'.format(self.total_trial, self.max_trials * 4))
+        self.setWindowTitle('Trial {}/{}'.format(self.total_trial+1, self.max_trials * 4))
         # Define the path for the arrow
         arrow_path = QPainterPath()
         center_x = painter.device().width() / 2
@@ -250,6 +254,7 @@ class FourClassUI(QMainWindow):
             print("提前结束")
             return
         if self.total_trial >= self.max_trials * 4:
+            self.collect_finished_signal.emit(self.save_path)
             self.allTrialsEnd(True)
             return
         self.showBreakUI()
@@ -264,15 +269,14 @@ class FourClassUI(QMainWindow):
 
     # 开始实验
     def startTrial(self):
-        # self.start_save_eeg_data_signal.emit()
         # 如果没有保存文件路径，弹出消息窗提示用户选择路径
-        # if self.line_edit_file_save.text()=="":
-        #     msg_box = QMessageBox()
-        #     msg_box.setText("请先选择保存路径！！")
-        #     msg_box.setWindowTitle("提示")
-        #     msg_box.setIcon(QMessageBox.Information)
-        #     msg_box.exec_()
-        #     return
+        if self.line_edit_file_save.text()=="":
+            msg_box = QMessageBox()
+            msg_box.setText("请先选择保存路径！！")
+            msg_box.setWindowTitle("提示")
+            msg_box.setIcon(QMessageBox.Information)
+            msg_box.exec_()
+            return
 
         if self.num_trails_lineEdit.text() != "":
             self.max_trials = int(self.num_trails_lineEdit.text())
@@ -290,21 +294,16 @@ class FourClassUI(QMainWindow):
 
         self.timer.singleShot(4000, self.runExperiment)
 
-        pixmap = QPixmap(self.label.width(), self.label.height())
-        pixmap.fill(Qt.white)
-        painter = QPainter(pixmap)
-        pen = QPen(Qt.black, 5)
-        painter.setPen(pen)
+        self.setGeometry(self.window_geometry)
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+        self.layout = QVBoxLayout(self.central_widget)
         
-        # Draw the text "开始想象"
-        font = QFont("Arial", 24)
-        painter.setFont(font)
-        painter.drawText(QRectF(0, 0, 400, 400), Qt.AlignCenter, "想象中...")
-        
-        painter.end()
-        
-        self.label.setPixmap(pixmap)
-
+        # 添加 "休息时间" 文字
+        self.label = QLabel("请想象...", self)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setFont(QFont("Arial", 24))
+        self.layout.addWidget(self.label)
         # 进行下一组实验
         
         self.total_trial += 1
@@ -347,3 +346,8 @@ class FourClassUI(QMainWindow):
         task_end_msg.setIcon(QMessageBox.Information)
         task_end_msg.exec_()
         return
+    
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.WindowStateChange or event.type() == QEvent.Move:
+            self.window_geometry = self.geometry()  # 更新窗口位置和大小
+        return super().eventFilter(obj, event)

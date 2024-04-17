@@ -4,7 +4,7 @@ from constVar import DOWNSAMPLE_SIZE,CHANEL_NUM
 
 # 打开 HDF5 文件，如果文件不存在将被创建
 def saveData(matrix, flag,path, name):
-    fullpath = path + name
+    fullpath = path +'/'+ name + '.h5'
     with h5py.File(fullpath, 'a') as h5_file:
         # 检查数据集是否已经存在
         if 'eegdata' not in h5_file:
