@@ -1,19 +1,16 @@
-import sys
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget,QLineEdit,QPushButton,
-                             QTextEdit,QHBoxLayout,QFileDialog,QMessageBox)
+                             QHBoxLayout,QFileDialog,QMessageBox)
 from PyQt5.QtGui import QPainter, QPen, QPainterPath, QPixmap, QFont
-from PyQt5.QtCore import Qt, QTimer,QRectF,pyqtSignal,QEvent
+from PyQt5.QtCore import Qt, QTimer,pyqtSignal,QEvent
 import random
 import winsound
-import numpy as np
-from SaveData import saveData
 from constVar import LABEL_MAP
 import time
 
 
 class TwoClassUI(QMainWindow):
     start_save_eeg_data_signal = pyqtSignal()
-    stop_save_eeg_data_signal = pyqtSignal(bool,int,str)  # 是否提前停止，本次实验的标签，保存路径
+    stop_save_eeg_data_signal = pyqtSignal(bool,int,str,str)  # 是否提前停止，本次实验的标签，保存路径
     collect_finished_signal = pyqtSignal(str)
 
 
@@ -24,6 +21,7 @@ class TwoClassUI(QMainWindow):
         self.max_trials = 1   # 每个方向最多出现12次
         self.num_trials = {'left':0,'right':0}      # 统计每个方向的次数
         self.save_path = None
+        self.fileName = None
         self.timer = QTimer()      # 控制实验流程的定时器
         self.flag = None            # 标记本次实验的方向
         self.stop_advance = False   # 是否提前停止实验
@@ -59,9 +57,9 @@ class TwoClassUI(QMainWindow):
         self.tip_text = QLabel(tip, self)
         self.tip_text.setFont(font)
         self.tip_text.setWordWrap(True)
-        self.tip_text.setGeometry(10, 10, 380, 180)
+        self.tip_text.setGeometry(10, 10, 300, 150)
 
-        layout.addWidget(self.tip_text)
+        layout.addWidget(self.tip_text,stretch=5)
 
         """
         每组试验次数输入框
@@ -72,8 +70,7 @@ class TwoClassUI(QMainWindow):
         self.num_trails_lineEdit = QLineEdit(self)
         num_trials_input_layout.addWidget(self.num_trials_label)
         num_trials_input_layout.addWidget(self.num_trails_lineEdit)
-        layout.addLayout(num_trials_input_layout)
-
+        layout.addLayout(num_trials_input_layout,stretch=2)
         
         """
         保存路径UI
@@ -94,7 +91,19 @@ class TwoClassUI(QMainWindow):
         file_save_layout.addWidget(self.button_file_save)
 
         # 将新的文件保存布局添加到主布局中
-        layout.addLayout(file_save_layout)
+        layout.addLayout(file_save_layout, stretch=2)
+        
+        """
+        文件名
+        """
+        file_name_input_layout = QHBoxLayout()
+        self.file_name_label = QLabel('文 件 名:', self)
+        self.file_name_lineEdit = QLineEdit(self)
+        self.tip_label = QLabel('(不要有特殊字符)', self)
+        file_name_input_layout.addWidget(self.file_name_label)
+        file_name_input_layout.addWidget(self.file_name_lineEdit)
+        file_name_input_layout.addWidget(self.tip_label)
+        layout.addLayout(file_name_input_layout, stretch=1)
         
         """
         按钮 
@@ -277,6 +286,11 @@ class TwoClassUI(QMainWindow):
         else: 
             self.max_trials = 12
         self.save_path = self.line_edit_file_save.text()
+
+        if self.file_name_lineEdit.text() == "":
+            self.fileName = "twoclass_data"
+        else:
+            self.fileName = self.file_name_lineEdit.text()
         
         self.runExperiment()
     
@@ -328,7 +342,7 @@ class TwoClassUI(QMainWindow):
     # 停止采集
     def stopCollect(self):
         print("子窗口：发送一次停止stop_save_eeg_data_signal")
-        self.stop_save_eeg_data_signal.emit(self.stop_advance,self.flag,self.save_path)     # 发送本次实验的标签
+        self.stop_save_eeg_data_signal.emit(self.stop_advance,self.flag,self.save_path,self.fileName)     # 发送本次实验的标签
     
  
     def allTrialsEnd(self,flag):

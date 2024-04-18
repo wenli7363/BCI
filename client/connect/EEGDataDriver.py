@@ -4,11 +4,11 @@ import csv
 from typing import List
 import connect.EEGDataValidJudgeHelper as EEGDataValidJudgeHelper
 from connect.EEGPacketDataParser import parse_packet,parse_info_data
-from constVar import DOWNSAMPLE_SIZE
+from constVar import DOWNSAMPLE_SIZE,SIGNAL_SIZE
 
 class EEGDataDriver:
     def __init__(self):
-        self.SIGNAL_SIZE = 2000  # SINGNAL_SIZE = 
+        self.SIGNAL_SIZE = SIGNAL_SIZE  
         self.DOWNSAMPLE_SIZE = DOWNSAMPLE_SIZE
         self.maxDataChannel = 32
         self.dataChannel = 32

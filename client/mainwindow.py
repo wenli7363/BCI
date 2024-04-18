@@ -1,10 +1,10 @@
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, 
+    QWidget, QVBoxLayout, 
     QHBoxLayout, QPushButton, QLabel, 
     QFrame, QTextEdit, QComboBox,
-    QCheckBox, QLineEdit, QScrollArea,QSizePolicy
+    QCheckBox, QScrollArea,QSizePolicy
 )
-from PyQt5.QtCore import Qt,QSize, QTimer
+from PyQt5.QtCore import QTimer
 from logger import Logger
 import twoclass, fourclass
 import numpy as np
@@ -15,7 +15,7 @@ from constVar import DOWNSAMPLE_SIZE,CHANEL_NUM
 from SaveData import saveData
 import time
 
-shift = 20
+shift = 40
 old_eeg_data = np.zeros((CHANEL_NUM, DOWNSAMPLE_SIZE))
 lines = []
 channels_to_plot = [i for i in range(CHANEL_NUM)]
@@ -67,7 +67,8 @@ class EEGDataCollectionUI(QWidget):
         self.channel_scroll_area.setWidgetResizable(True)
         self.channel_widget = QWidget()
         self.channel_layout = QHBoxLayout()
-
+        
+        # 每个通道对应一个复选框
         for i in range(CHANEL_NUM):
             checkbox = QCheckBox(f"ch{i+1}")
             checkbox.setChecked(True)  # 默认全部选中
@@ -141,7 +142,8 @@ class EEGDataCollectionUI(QWidget):
         """
         Toggle visibility of EEG channels based on checkbox state.
         """
-        self.axes[channel_index].set_visible(state == 2)
+        # self.axes[channel_index].set_visible(state == 2)
+        self.eeg_data_visualizer.set_visibility(channel_index, state == 2)
 
     def initConnect(self):
         self.two_class_button.clicked.connect(self.on_2class_button_clicked)        # 二分类按钮点击事件
@@ -225,7 +227,7 @@ class EEGDataCollectionUI(QWidget):
         if (self.writeBufferNum <= 4):
             eeg_data_per_trial_buffer.append(self.get_eeg_data())
 
-    def stop_save_timer(self,stop_advance,flag,save_path):
+    def stop_save_timer(self,stop_advance,flag,save_path,fileName):
         global eeg_data_per_trial_buffer
         if self.data_saver_timer.isActive():
            self.data_saver_timer.stop()
@@ -239,6 +241,6 @@ class EEGDataCollectionUI(QWidget):
         
         # 如果不是提前停止采集，就保存数据
         if stop_advance == False:
-            saveData(buffer_concatenate,flag,save_path,"data")
+            saveData(buffer_concatenate,flag,save_path,fileName)
         else:
             print("提前停止采集，不保存数据")
