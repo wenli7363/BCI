@@ -95,6 +95,9 @@ def get_dataset_subject(X,y,number=1,standardize=True):
         X_total = np.concatenate((X[0], X[1], X[2], X[3], X[4], X[5], X[6], X[7]))
         y_total = np.concatenate((y[0], y[1], y[2], y[3], y[4], y[5], y[6], y[7]))
 
+    # print("x_total: ",X_total.shape)    # x_total:  (2271, 22, 1000)
+    # print("y_total: ",y_total.shape)    # (2271,
+    
     # 测试集
     X_test=X[number-1]
     y_test=y[number-1]
@@ -117,4 +120,4 @@ def get_dataset_subject(X,y,number=1,standardize=True):
     # X_total = np.transpose(X_total, (0, 2, 1))
     # X_test = np.transpose(X_test, (0, 2, 1))
     
-    return X_total,X_test,y_total,y_test
+    return X_total,X_test,y_total,y_test            # 返回的shape是(样本数，特征数，通道数)和(样本数)

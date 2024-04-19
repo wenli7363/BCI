@@ -13,7 +13,8 @@ from dataloader import dataloader
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # 1. 导入数据
-file_path = './dataset/23.h5'
+# file_path = './dataset/23.h5'
+file_path = 'D:\\Desktop\\4\\42.h5'
 X, y = import_data(file_path)
 
 # 2. 创建数据加载器
@@ -22,8 +23,8 @@ train_loader, test_loader = dataloader(X, y, batch_size=batch_size, shuffle=True
 
 # 3. 实例化模型
 num_classes = 4  # 假设你有4个类别
-num_channels = X.shape[1]  # 获取数据的通道数
-# feature_extractor = Feature(num_classes, num_channels).to(device)
+num_channels = X.shape[1]  # 获取数据的通道数（32）
+
 feature_extractor = Feature(num_classes).to(device)
 classifier1 = Predictor1(num_classes).to(device)
 classifier2 = Predictor2(num_classes).to(device)
@@ -44,7 +45,7 @@ for epoch in range(num_epochs):
     for inputs, labels in train_loader:
         inputs = inputs.to(device)
         labels = labels.to(device)
-        
+
         # 前向传播
         features = feature_extractor(inputs)
         output1 = classifier1(features)

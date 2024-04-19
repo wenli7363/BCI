@@ -19,5 +19,7 @@ def read_h5_file(file_path):
 
 # 使用示例
 # file_path = 'D:\\Desktop\\2\\test2.h5'  # 替换为您的 HDF5 文件路径
-file_path = 'D:\\Desktop\\2\\2_1.h5'  # 替换为您的 HDF5 文件路径
+# file_path = 'D:\\Desktop\\2\\2_1.h5'  # 替换为您的 HDF5 文件路径
+# file_path = 'D:\\Desktop\\4\\42.h5'
+file_path = 'D:\\Desktop\\2\\25.h5'
 read_h5_file(file_path)

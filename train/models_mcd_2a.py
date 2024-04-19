@@ -51,7 +51,7 @@ class Feature(nn.Module):
                 kernel_size=(1, 16),  # filter size
                 groups=16,
                 bias=False
-            ),  # output shape (16, 1, T//4)
+            ),  # output shape (16, 1, T//4)  因为有padding，用的same模式卷积
             nn.Conv2d(
                 in_channels=16,  # input shape (16, 1, T//4)
                 out_channels=16,  # num_filters
@@ -60,20 +60,33 @@ class Feature(nn.Module):
             ),  # output shape (16, 1, T//4)
             nn.BatchNorm2d(16),  # output shape (16, 1, T//4)
             nn.ELU(),
-            nn.AvgPool2d((1, 8)),  # output shape (16, 1, T//32)
+            nn.AvgPool2d((1, 8)),  # output shape (16, 1, T//32)        # 池化，再除以8
             nn.Dropout(self.drop_out)
         )
         self.self_attn = SelfAttention(in_channels=16)
-        self.out = nn.Linear((496), classes_num)
+        # self.out = nn.Linear((496), classes_num)          # feature并不需要全连接层，因为后面还有两个分类器
 
+    """
+    torch.Size([128, 1, 22, 1000])
+    经过block1:  torch.Size([128, 8, 22, 1000])
+    经过block2:  torch.Size([128, 16, 1, 250])
+    经过block3:  torch.Size([128, 16, 1, 31])
+    经过attention:  torch.Size([128, 16, 31])
+    torch.Size([128, 496])
+    """
     def forward(self, x):
+        # print(x.shape)
         x = self.block_1(x)
+        # print("经过block1: ",x.shape)
         # print("block1", x.shape)
         x = self.block_2(x)
+        # print("经过block2: ",x.shape)
         # print("block2", x.shape)
         x = self.block_3(x)
         # print("block3", x.shape)
+        # print("经过block3: ",x.shape)
         x = self.self_attn(x)
+        # print("经过attention: ",x.shape)
         x = x.view(x.size(0), -1)
         # print(x.shape)
         
@@ -106,6 +119,7 @@ class Predictor2(nn.Module):
 class SelfAttention(nn.Module):
     def __init__(self, in_channels):
         super(SelfAttention, self).__init__()
+        # 输出通道缩小8倍
         self.query = nn.Conv1d(in_channels, in_channels // 8, 1)
         self.key = nn.Conv1d(in_channels, in_channels // 8, 1)
         self.value = nn.Conv1d(in_channels, in_channels, 1)
@@ -128,7 +142,7 @@ class SelfAttention(nn.Module):
         attention = torch.softmax(energy, dim=-1)
         
         # 注意力加权
-        out = torch.bmm(proj_value, attention.permute(0, 2, 1))
+        out = torch.bmm(proj_value, attention.permute(0, 2, 1))     # permute对维度进行转置
         out = out.view(batch_size, channels, time)
         
         # 残差连接

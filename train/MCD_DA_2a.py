@@ -43,7 +43,9 @@ class Solver(object):
  ########################### # 加载训练和测试数据
 
         self.s_dataloaders,self.t_dataloaders = dataloader_2a.dataloader_2a(number=number)
-
+        # for batch in self.s_dataloaders:
+        #     data, label = batch
+        #     print(data.shape, label.shape)
 
         print('------------------------ load finished!  ------------------------')
 
@@ -189,18 +191,24 @@ class Solver(object):
 
             # print(f"inputs_s shape: {inputs_s.shape}") 
             inputs_s = inputs_s.to(self.device) # inputs_s shape (batch_size,1,电极数,1000)
-            inputs_t = inputs_t.to(self.device) # (batch_size)
-            labels_s = labels_s.to(self.device)
+            inputs_t = inputs_t.to(self.device) 
+            labels_s = labels_s.to(self.device) # (batch_size)
             labels_t = labels_t.to(self.device)
 
             self.reset_grad()
 
-            # 这里额外定义了
+            # 打印输入尺寸
+            # print(f"Input size: {inputs_s.size()}")
             
 ### 这些都是直接分开定义好
             feat_s = self.G(inputs_s)   # feat_s (batch_size, 496)
+            # print(f"Feature extractor output size: {feat_s.size()}")
+
             output_s1 = self.C1(feat_s) #   (batch_size, 4) 得到4个类的预测概率
+            # print(f"Classifier C1 output size: {output_s1.size()}")
+            
             output_s2 = self.C2(feat_s)
+            # print(f"Classifier C2 output size: {output_s2.size()}")
 
 ###### 1 初始化分类器C1,C2,G
         #   直接用交叉熵损失来保证在源域上分类是准确的
@@ -408,7 +416,7 @@ for i in range(1,10):
     # 开始训练
     start = time.time() 
     # 训练1000次
-    for i in range(1000):
+    for i in range(2):
         slover.train(epoch=i)
     end = time.time()
     execution_time = end - start
