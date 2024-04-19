@@ -38,21 +38,11 @@ class Solver(object):
         self.num_k = num_k
         self.best_ACC = 0    # 训练过程中，测试集最好的正确率
         self.number = number
-        # self.checkpoint_dir = checkpoint_dir
-        # self.save_epoch = save_epoch
-        # self.use_abs_diff = args.use_abs_diff
-        # self.all_use = all_use
-        # if self.source == 'svhn':
-        #     self.scale = True
-        # else:
-        #     self.scale = False
         print('------------------------ dataset loading -------------------')
 
  ########################### # 加载训练和测试数据
 
         self.s_dataloaders,self.t_dataloaders = dataloader_2a.dataloader_2a(number=number)
-
-        # number 作为目标域数据，剩下8个个体数据作为源域
 
 
         print('------------------------ load finished!  ------------------------')
@@ -407,7 +397,9 @@ class MultiCEFocalLoss(torch.nn.Module):
             loss = loss.sum()
         return loss
 
-
+"""
+ ============================================== 开始跑模型的地方 =========================================
+"""
 # 计算九个受试者的准确率
 for i in range(1,10):
     # 实例化
@@ -415,6 +407,7 @@ for i in range(1,10):
     
     # 开始训练
     start = time.time() 
+    # 训练1000次
     for i in range(1000):
         slover.train(epoch=i)
     end = time.time()
