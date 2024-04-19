@@ -13,7 +13,7 @@ from dataloader import dataloader
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # 1. 导入数据
-file_path = 'path/to/your/h5py/file'
+file_path = './dataset/23.h5'
 X, y = import_data(file_path)
 
 # 2. 创建数据加载器
@@ -22,6 +22,8 @@ train_loader, test_loader = dataloader(X, y, batch_size=batch_size, shuffle=True
 
 # 3. 实例化模型
 num_classes = 4  # 假设你有4个类别
+num_channels = X.shape[1]  # 获取数据的通道数
+# feature_extractor = Feature(num_classes, num_channels).to(device)
 feature_extractor = Feature(num_classes).to(device)
 classifier1 = Predictor1(num_classes).to(device)
 classifier2 = Predictor2(num_classes).to(device)
@@ -36,6 +38,7 @@ optimizer_classifier2 = optim.Adam(classifier2.parameters(), lr=0.001)
 num_epochs = 100
 train_losses = []
 test_accuracies = []
+print("=========================== 开始训练 =============================")
 for epoch in range(num_epochs):
     running_loss = 0.0
     for inputs, labels in train_loader:
@@ -90,30 +93,30 @@ for epoch in range(num_epochs):
     test_accuracies.append(test_accuracy)
     print(f'Test Accuracy: {test_accuracy:.2f}%')
 
-# 7. 可视化
-# 绘制损失曲线
-plt.figure(figsize=(8, 6))
-plt.plot(range(num_epochs), train_losses, label='Training Loss')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.title('Training Loss Curve')
-plt.legend()
-plt.show()
+# # 7. 可视化
+# # 绘制损失曲线
+# plt.figure(figsize=(8, 6))
+# plt.plot(range(num_epochs), train_losses, label='Training Loss')
+# plt.xlabel('Epoch')
+# plt.ylabel('Loss')
+# plt.title('Training Loss Curve')
+# plt.legend()
+# plt.show()
 
-# 绘制测试集准确率曲线
-plt.figure(figsize=(8, 6))
-plt.plot(range(num_epochs), test_accuracies, label='Test Accuracy')
-plt.xlabel('Epoch')
-plt.ylabel('Accuracy (%)')
-plt.title('Test Accuracy Curve')
-plt.legend()
-plt.show()
+# # 绘制测试集准确率曲线
+# plt.figure(figsize=(8, 6))
+# plt.plot(range(num_epochs), test_accuracies, label='Test Accuracy')
+# plt.xlabel('Epoch')
+# plt.ylabel('Accuracy (%)')
+# plt.title('Test Accuracy Curve')
+# plt.legend()
+# plt.show()
 
-# 绘制最后一个epoch的混淆矩阵
-cm = confusion_matrix(all_labels, all_predictions)
-plt.figure(figsize=(8, 6))
-sns.heatmap(cm, annot=True, cmap='Blues', fmt='g')
-plt.xlabel('Predicted')
-plt.ylabel('True')
-plt.title('Confusion Matrix')
-plt.show()
+# # 绘制最后一个epoch的混淆矩阵
+# cm = confusion_matrix(all_labels, all_predictions)
+# plt.figure(figsize=(8, 6))
+# sns.heatmap(cm, annot=True, cmap='Blues', fmt='g')
+# plt.xlabel('Predicted')
+# plt.ylabel('True')
+# plt.title('Confusion Matrix')
+# plt.show()

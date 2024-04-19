@@ -11,15 +11,14 @@ class Feature(nn.Module):
         self.drop_out = 0.25
 
         self.block_1 = nn.Sequential(
-            # 将输入尺寸修改为(32, 2000)
-            nn.ZeroPad2d((31, 31, 0, 0)),  # 在时间维度上进行零填充
+            nn.ZeroPad2d((31, 31, 0, 0)),
             nn.Conv2d(
-                in_channels=1,  # 输入通道数为1
-                out_channels=8,  # 输出通道数为8
-                kernel_size=(1, 64),  # 卷积核尺寸为(1, 64)
+                in_channels=32,  # 将in_channels设置为你数据的通道数
+                out_channels=8,
+                kernel_size=(1, 64),
                 bias=False
-            ),  # 输出尺寸为(8, 32, 1969)
-            nn.BatchNorm2d(8)  # 批归一化
+            ),
+            nn.BatchNorm2d(8)
         )
 
         # block 2 和 3 保持不变

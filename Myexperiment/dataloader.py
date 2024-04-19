@@ -35,7 +35,7 @@ def dataloader(X, y, batch_size=128, shuffle=True, num_workers=0):
 
     return train_loader, test_loader
 
-# X, y = import_data("D:/Desktop/2/2_1.h5")
+# X, y = import_data("dataset/23.h5")
 # train_loader, test_loader = dataloader(X, y)
 # print(train_loader)
 
