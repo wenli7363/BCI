@@ -283,14 +283,14 @@ class MCD_sovler(object):
 """
 
 
-filePath = 'D:\\Desktop\\4\\42.h5'
+file_path = '../dataset/100.h5' 
 # 实例化
-slover = MCD_sovler(file_path=filePath,batch_size = 128,learning_rate = 0.005,class_num = 4)
+slover = MCD_sovler(file_path=file_path,batch_size = 128,learning_rate = 0.005,class_num = 4)
    
 # 开始训练
 start = time.time() 
 # 训练1000次
-for i in range(2):
+for i in range(20):
     slover.train(epoch=i)
 end = time.time()
 execution_time = end - start
