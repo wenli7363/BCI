@@ -68,7 +68,7 @@ class Feature(nn.Module):
         # self.out = nn.Linear((992), classes_num)  
 
     def forward(self, x):
-        print(x.shape)
+        # print(x.shape)
         x = self.block_1(x)
         # print("经过block1后的x的shape：",x.shape)
         

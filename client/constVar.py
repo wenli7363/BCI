@@ -7,4 +7,4 @@ DOWNSAMPLE_SIZE = 500
 SIGNAL_SIZE = DOWNSAMPLE_SIZE * 4
 CHANEL_NUM = 32
 
-LABEL_MAP = {'up':0, 'down':1, 'left':2, 'right':3}
+LABEL_MAP = {'left':0, 'right':1, 'up':2, 'down':3}
