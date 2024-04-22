@@ -129,6 +129,7 @@ class FourClassUI(QMainWindow):
         # self.setGeometry(100, 100, 400, 400)        # 窗口尺寸
         self.setGeometry(self.window_geometry)
         # self.setWindowTitle('休息时间')
+        self.setWindowTitle('Trial {}/{}'.format(self.total_trial+1, self.max_trials * 2))
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.layout = QVBoxLayout(self.central_widget)
@@ -274,7 +275,7 @@ class FourClassUI(QMainWindow):
     
     def selectSavePath(self):
         # 这里可以使用 QFileDialog 来打开文件选择对话框
-        save_path = QFileDialog.getExistingDirectory(self, "选择保存路径", "~")  # "~" 代表用户的主目录
+        save_path = QFileDialog.getExistingDirectory(self, "选择保存路径", "D://Desktop")  # "~" 代表用户的主目录
         if save_path:
             self.line_edit_file_save.setText(save_path)  # 将选择的路径显示在 QLineEdit 中
 

@@ -64,7 +64,7 @@ class Feature(nn.Module):
             # output shape (样本数，16，通道数，时间点数//32)
         )
 
-        self.self_attn = SelfAttention(in_channels=16)      # output shape (样本数，16，通道数，时间点数//32)
+        # self.self_attn = SelfAttention(in_channels=16)      # output shape (样本数，16，通道数，时间点数//32)
         # self.out = nn.Linear((992), classes_num)  
 
     def forward(self, x):
@@ -77,7 +77,7 @@ class Feature(nn.Module):
         
         x = self.block_3(x)
         # print("经过block3后的x的shape：",x.shape)
-        x = self.self_attn(x)
+        # x = self.self_attn(x)
         # print("经过attention后的x的shape：",x.shape)
         x = x.view(x.size(0), -1)  # 展平特征图以匹配全连接层的输入
  

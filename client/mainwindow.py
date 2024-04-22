@@ -18,7 +18,7 @@ import time
 shift = 40
 old_eeg_data = np.zeros((CHANEL_NUM, DOWNSAMPLE_SIZE))
 lines = []
-channels_to_plot = [i for i in range(CHANEL_NUM)]
+channels_to_plot = [i for i in range(CHANEL_NUM) if i!=9]
 eeg_data_per_trial_buffer = []      # 用于存储每次采集的数据
 
 class EEGDataCollectionUI(QWidget):
@@ -208,8 +208,8 @@ class EEGDataCollectionUI(QWidget):
         self.eeg_data_visualizer.update_eeg_data(window_data)
 
     def get_eeg_data(self):
-        return -50 + (50 - (-50)) *np.random.rand(CHANEL_NUM, DOWNSAMPLE_SIZE)
-        # return np.array(self.eeg_serial_port_manager.eeg_driver.get_eeg_data())
+        # return -50 + (50 - (-50)) *np.random.rand(CHANEL_NUM, DOWNSAMPLE_SIZE)
+        return np.array(self.eeg_serial_port_manager.eeg_driver.get_eeg_data())
 
     def start_save_timer(self):
         # print("主窗口：启动保存数据定时器:",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))

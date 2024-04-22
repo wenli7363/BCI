@@ -6,7 +6,7 @@ import torch.optim as optim
 from torch.autograd import Variable
 
 from preprocessing import import_data
-from dataloader import dataloader
+from dataloader import dataloader_train_val,dataloader_test
 import model
 import numpy as np
 
@@ -45,7 +45,8 @@ class MCD_sovler(object):
         X, y = import_data(self.file_path)
 
         # 2. 创建数据加载器
-        self.s_dataloaders,self.t_dataloaders = dataloader(X, y, batch_size=batch_size, shuffle=True)
+        # 这里要改一下，改成分开加载源域和目标域的数据。
+        self.s_dataloaders,self.t_dataloaders = dataloader_train_val(X, y, batch_size=batch_size, shuffle=True)
 
         print('------------------------ load finished!  ------------------------')
 
