@@ -2,23 +2,30 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
-from model import Feature, Predictor1
-from dataloader import dataloader_train_val_test,dataloader_test
+from dataloader import dataloader_train_val_test, dataloader_test
 from matplotlib import pyplot as plt
-from preprocessing import import_data,append_data
+from preprocessing import import_data, append_data
 
-class EEGNet(nn.Module):
+class SimpleCNN(nn.Module):
     def __init__(self, num_classes):
-        super(EEGNet, self).__init__()
-        self.feature_extractor = Feature(num_classes)
-        self.predictor1 = Predictor1(num_classes)
+        super(SimpleCNN, self).__init__()
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+        self.fc1 = nn.Linear(256000, 128)
+        self.fc2 = nn.Linear(128, num_classes)
 
     def forward(self, x):
-        x = self.feature_extractor(x)
-        x = self.predictor1(x)
+        batch_size, channels, height, width = x.size()
+        x = self.pool(nn.functional.relu(self.conv1(x)))
+        x = self.pool(nn.functional.relu(self.conv2(x)))
+        x = x.view(batch_size, -1)  # 将特征图拉平
+        # print(x.shape[1])
+        x = nn.functional.relu(self.fc1(x))
+        x = self.fc2(x)
         return x
 
-def train(model, train_loader, val_loader,test_loader, criterion, optimizer, device, num_epochs,reg_lambda=0.001):
+def train(model, train_loader, val_loader, test_loader, criterion, optimizer, device, num_epochs, reg_lambda=0.001):
     model.train()
     train_loss_history = []
     val_loss_history = []
@@ -129,27 +136,23 @@ def train(model, train_loader, val_loader,test_loader, criterion, optimizer, dev
 
 if __name__ == '__main__':
 
-    # # 使用示例
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # model = EEGNet(num_classes=2).to(device)
-    # criterion = nn.CrossEntropyLoss()
-    # optimizer = optim.Adam(model.parameters(), lr=0.001)
+    # 使用示例
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = SimpleCNN(num_classes=2).to(device)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     file_path = 'D:\\Desktop\\2\\WH1.h5'
-    X,y = import_data(file_path)
-    X,y = append_data("D:/Desktop/2/WH2.h5",X,y)
-    X,y = append_data("D:/Desktop/2/WH3.h5",X,y)
-    X,y = append_data("D:/Desktop/2/WH4.h5",X,y)
-    X,y = append_data("D:/Desktop/2/WH5.h5",X,y)
-    X,y = append_data("D:/Desktop/2/WH6.h5",X,y)
+    X, y = import_data(file_path)
+    X, y = append_data("D:/Desktop/2/WH2.h5", X, y)
+    X, y = append_data("D:/Desktop/2/WH3.h5", X, y)
+    # X, y = append_data("D:/Desktop/2/WH4.h5", X, y)
+    # X, y = append_data("D:/Desktop/2/WH5.h5", X, y)
+    # X, y = append_data("D:/Desktop/2/WH6.h5", X, y)
     # X,y = append_data("D:/Desktop/2/WH7.h5",X,y)
 
-
-    # train_loader, val_loader, test_loader = dataloader_train_val_test(X, y, val_ratio=0.2)
-    test_loader = dataloader_test(X,y,batch_size=200)
-
-
-
+    train_loader, val_loader, test_loader = dataloader_train_val_test(X, y, val_ratio=0.2)
+    # test_loader = dataloader_test(X, y, batch_size=200)
 
     # for batch in train_loader:
     #     inputs, labels = batch
@@ -161,15 +164,14 @@ if __name__ == '__main__':
     #     print(f"Inputs shape: {inputs.shape}")
     #     print(f"Labels shape: {labels.shape}")
     #     break
-    for batch in test_loader:
-        inputs, labels = batch
-        print(f"Inputs shape: {inputs.shape}")
-        print(f"Labels shape: {labels.shape}")
-        # print(inputs)
-        # print(labels)
-        break
+    # for batch in test_loader:
+    #     inputs, labels = batch
+    #     print(f"Inputs shape: {inputs.shape}")
+    #     print(f"Labels shape: {labels.shape}")
+    #     # print(inputs)
+    #     # print(labels)
+    #     break
 
+    num_epochs = 100
 
-    # num_epochs = 100
-
-    # model = train(model, train_loader, val_loader,test_loader, criterion, optimizer, device, num_epochs)
+    model = train(model, train_loader, val_loader,test_loader, criterion, optimizer, device, num_epochs)

@@ -47,7 +47,7 @@ def append_data(file_path, X, y):
             X = np.concatenate((X, eegdata), axis=0)
            # 将新的EEG数据追加到现有的X中
             y = np.concatenate((y,labels),axis=0)            # 将新的标签追加到现有的y中
-
+    return X,y
 # X,y = import_data("D:/Desktop/2/2_1.h5")
 # print(X.shape)
 # print(y.shape)
